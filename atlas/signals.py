@@ -1,31 +1,66 @@
-import ..backend as backend
 
 class Signal():
+    OUTPUT = 0
+    INPUT = 1
+    WIRE = 2
+    REG = 3
+    NODE = 4
+
     def __init__(self, _name):
-        self.dir_in = False
+        self.sigtype = Signal.WIRE
         self.name = _name
-        self.parent = _parent
+        self.parent = None
 
     def SetParent(self, _parent):
         self.parent = _parent
 
+    def ChildAssign(self, child, signal):
+        assert self.parent is not None
+        self.parent.ChildAssign(child, signal)
+
+    def Assign(self, signal):
+        assert self.parent is not None
+        self.parent.ChildAssign(self, signal)
+
+    def __str__(self):
+        assert self.parent is not None
+        
+        return self.parent.__str__() + '.' + self.name
+
 class Bits(Signal):
-    def __init__(self, _name, _width, _signed=False):
-        Signal.__init__(_name)
+    def __init__(self, _width, _signed=False):
+        Signal.__init__(self, 'bits')
         self.width = _width
         self.signed = _signed
         self.parent = None
 
 class Bundle(Signal):
     def __init__(self, _name, _dict):
-        Signal.__init__(_name)
-        self.signals = _dict
+        Signal.__init__(self, _name)
+        self.signal_names = []
 
-        for _, signal in self.signals:
-            signal.SetParent(self)
+        for name in _dict:
+            self.signal_names.append(name)
+            _dict[name].name = name
+            _dict[name].SetParent(self)
 
-    def __getitem__(key):
-        return self.signals[key]
+        self.__dict__.update(_dict)
+
+    def __iter__(self):
+        self.index = 0
+        return self
+
+    def __next__(self):
+        if self.index >= len(self.signal_names):
+            raise StopIteration
+
+        signal = self.__dict__[self.signal_names[self.index]]
+        self.index += 1
+
+        return signal
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
 
 def Signed(signal):
     signal.signed = True
@@ -36,15 +71,19 @@ def Unsigned(signal):
     return
 
 def Flip(signal):
-    signal.dir_in = not signal.dir_in
+    if signal.sigtype == Signal.INPUT:
+        signal.sigtype = Signal.OUTPUT
+    else:
+        signal.sigtype = Signal.INPUT
+
     return signal
 
 def Input(signal):
-    signal.dir_in = True
+    signal.sigtype = Signal.INPUT
     return signal
 
 def Output(signal):
-    signal.dir_in = False
+    signal.sigtype = Signal.OUTPUT
     return signal
 
 def Io(_dict):

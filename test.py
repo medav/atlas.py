@@ -1,12 +1,29 @@
-from firrtl import *
+import atlas.parser as parser
+import atlas.emitter as emitter
+from atlas.frontend.context import *
+from atlas.frontend.elaborate import *
+from atlas.signals import *
 
+CreateDefaultCircuit('top')
 
-# circuit = Circuit("test")
-# topmod = Module("top")
-# circuit.AddModule(topmod)
-# topmod.AddReg(Reg('foo', Type('UInt<8>')))
+class Mux(Module):
+    def __init__(self, _name):
+        Module.__init__(self, _name)
+        self.io = Io({
+            'a': Input(Bits(1)),
+            'b': Input(Bits(1)),
+            'sel': Input(Bits(1)),
+            'out': Output(Bits(1))
+        })
 
+    def Elaborate(self):
+        io = self.io
 
-pt = ParseFirrtl(open('RefreshController.fir', 'r'))
+        with Condition(io.sel):
+            io.out.Assign(io.b)
 
-print([mod.name for mod in pt.modules])
+        with Else():
+            io.out.Assign(io.a)
+
+pt = Elaborate(Mux('mymux'))
+emitter.EmitFirrtl('mux.fir', pt)

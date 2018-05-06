@@ -1,4 +1,5 @@
 import re
+from .signals import *
 
 class Circuit(object):
     def __init__(self, _name):
@@ -14,26 +15,18 @@ class Circuit(object):
     def __str__(self):
         return 'circuit {}'.format(self.name)
 
-class Dtype(object):
-    def __init__(self, _dtype_str):
-        self.dtype_str = _dtype_str
-
 class Module(object):
     def __init__(self, _name):
         self.name = _name
-        self.inputs = {}
-        self.outputs = {}
+        self.io = {}
         self.regs = {}
         self.wires = {}
         self.nodes = {}
         self.insts = {}
         self.exprs = []
 
-    def AddInput(self, input):
-        self.inputs[input.name] = input
-
-    def AddOutput(self, output):
-        self.outputs[output.name] = output
+    def AddIo(self, signal):
+        self.io[signal.name] = signal
 
     def AddReg(self, reg):
         self.regs[reg.name] = reg
@@ -43,9 +36,9 @@ class Module(object):
 
     def AddSignal(self, signal):
         if signal.sigtype == 'input':
-            self.AddInput(signal)
+            self.AddIo(Input(signal))
         elif signal.sigtype == 'output':
-            self.AddOutput(signal)
+            self.AddIo(Output(signal))
         elif signal.sigtype == 'wire':
             self.AddWire(signal)
         elif signal.sigtype == 'reg':
@@ -66,30 +59,11 @@ class Module(object):
         raise NotImplementedError()
 
     def __str__(self):
-        return 'module {}'.format(self.name)
+        return self.name
 
 class Expr(object):
     def __init__(self):
         pass
-
-class Signal(object):
-    def __init__(self, _sigtype, _name, _dtype, _info):
-        self.sigtype = _sigtype
-        self.name = _name
-        self.dtype = _dtype
-        self.info = _info
-
-    def ParseDtype(dtype_str):
-        pass
-
-    def FromString(line):
-        regex = re.compile('(wire|reg|input|output) ([a-zA-Z_0-9]+)\\W*:\\W*(.*)(@\\[.*\\])?')
-        m = regex.match(line.strip())
-        sigtype = m.groups('')[0].strip()
-        name = m.groups('')[1].strip()
-        dtype = Signal.ParseDtype(m.groups('')[2].strip())
-        info = m.groups('')[3].strip()
-        return Signal(sigtype, name, dtype, info)
 
 class Node(object):
     def __init__(self, _name, _expr, _info):

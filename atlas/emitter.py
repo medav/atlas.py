@@ -1,4 +1,6 @@
 from .backend import *
+from .signals import *
+
 
 class FileWriter(object):
     def __init__(self, _f):
@@ -32,15 +34,21 @@ class Context(object):
     def __exit__(self, *args):
         self.fw.Dedent()
 
+def SignalTypeString(sigtype):
+    return {
+        Signal.INPUT: 'input',
+        Signal.OUTPUT: 'output',
+        Signal.WIRE: 'wire',
+        Signal.REG: 'reg',
+        Signal.NODE: 'node'
+    }[sigtype]
+
 def EmitSignal(fw, sig):
-    fw.WriteLine('{} {}: {} {}'.format(sig.sigtype, sig.name, sig.dtype, sig.info))
+    fw.WriteLine('{} {}: {} {}'.format(SignalTypeString(sig.sigtype), sig.name, '', ''))
 
 def EmitIo(fw, module):
-    for iname in module.inputs:
-        EmitSignal(fw, module.inputs[iname])
-
-    for oname in module.outputs:
-        EmitSignal(fw, module.outputs[oname])
+    for signal in module.io:
+        EmitSignal(fw, signal)
 
 def EmitModule(fw, module):
     with Context(fw, 'module', module.name):
