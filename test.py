@@ -1,8 +1,7 @@
-import atlas.parser as parser
-import atlas.emitter as emitter
+import atlas.firrtl.emitter as emitter
 from atlas.frontend.context import *
 from atlas.frontend.elaborate import *
-from atlas.signals import *
+from atlas.backend.signals import *
 
 CreateDefaultCircuit('top')
 
@@ -19,11 +18,10 @@ class Mux(Module):
     def Elaborate(self):
         io = self.io
 
+        io.out.Assign(io.a)
+
         with io.sel:
             io.out.Assign(io.b)
-
-        with Else:
-            io.out.Assign(io.a)
 
 pt = Elaborate(Mux('mymux'))
 emitter.EmitFirrtl('mux.fir', pt)

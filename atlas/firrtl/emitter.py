@@ -1,5 +1,4 @@
-from .backend import *
-from .signals import *
+from ..model import *
 
 
 class FileWriter(object):

@@ -55,31 +55,21 @@ class Module(object):
     def AddExpr(self, expr):
         self.exprs.append(expr)
 
+    def AddConnect(self, lhs, rhs):
+        pass
+
     def Regex():
         raise NotImplementedError()
 
     def __str__(self):
         return self.name
 
-class Expr(object):
-    def __init__(self):
-        pass
+class Assignment():
+    def __init__(self, _lhs, _rhs):
+        self.lhs = _lhs
+        self.rhs = _rhs
 
-class Node(object):
-    def __init__(self, _name, _expr, _info):
-        self.name = _name
-        self.expr = _expr
-        self.info = _info
-
-    def FromString(line):
-        regex = re.compile('node ([a-zA-Z_0-9]+)\\W*=\\W*(.*)(@\\[.*\\])?')
-        m = regex.match(line.strip())
-        name = m.groups('')[0].strip()
-        expr = m.groups('')[1].strip()
-        info = m.groups('')[2].strip()
-        return Node(name, expr, info)
-
-class Condition(Expr):
+class Condition():
     def __init__(self, _condition_str):
         self.condition_str = _condition_str
         self.exprs = []
@@ -104,12 +94,67 @@ class Condition(Expr):
     def __str__(self):
         return 'when'
 
-class PrimOp(Expr):
-    def __init__(self, _opname, _args):
-        self.opname = _opname
-        self.args = _args
 
-class Assignment(Expr):
-    def __init__(self, _lhs, _rhs):
-        self.lhs = _lhs
-        self.rhs = _rhs
+class Node(object):
+    def __init__(self, _name, _expr, _info):
+        self.name = _name
+        self.expr = _expr
+        self.info = _info
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *kwargs):
+        pass
+
+class Signal():
+
+    # Signal directions
+    INPUT = 0
+    OUTPUT = 1
+    FLIPPED = 2
+
+    # Signal types
+    WIRE = 0
+    REG = 1
+
+    def __init__(self, _name):
+        self.sigdir = Signal.INPUT
+        self.sigtype = Signal.WIRE
+        self.name = _name
+        self.parent = None
+
+class Bits(Signal):
+    def __init__(self, _name, _width, _signed=False):
+        Signal.__init__(self, _name)
+        self.width = _width
+        self.signed = _signed
+        self.parent = None
+
+class Bundle(Signal):
+    def __init__(self, _name, _dict):
+        Signal.__init__(self, _name)
+        self.signal_names = []
+
+        for name in _dict:
+            self.signal_names.append(name)
+            _dict[name].name = name
+            _dict[name].parent = self
+
+        self.__dict__.update(_dict)
+
+    def __iter__(self):
+        self.index = 0
+        return self
+
+    def __next__(self):
+        if self.index >= len(self.signal_names):
+            raise StopIteration
+
+        signal = self.__dict__[self.signal_names[self.index]]
+        self.index += 1
+
+        return signal
+
+    def __getitem__(self, key):
+        return self.__dict__[key]

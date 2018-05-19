@@ -17,21 +17,19 @@ def ParseModule(context, line):
     context[-1].AddModule(module)
     context.append(module)
 
-def ParseSignalType(type_str):
-    return {
-        'wire': Signal.WIRE,
-        'reg': Signal.REG,
-        'node': Signal.NODE,
-        'input': Signal.INPUT,
-        'output': Signal.OUTPUT,
-    }[type_str]
+signal_type_name_map = {
+    'wire': Signal.WIRE,
+    'reg': Signal.REG,
+    'input': Signal.INPUT,
+    'output': Signal.OUTPUT,
+}
 
 def ParseSignal(context, line):
     regex = re.compile('(wire|reg|input|output) ([a-zA-Z_0-9]+)\\W*:\\W*(.*)(@\\[.*\\])?')
     m = regex.match(line.strip())
 
     signal = Signal(m.groups('')[1].strip())
-    signal.sigtype = ParseSignalType(m.groups('')[0].strip())
+    signal.sigtype = signal_type_name_map[m.groups('')[0].strip()]
 
     dtype = Signal.ParseDtype(m.groups('')[2].strip())
     # info = m.groups('')[3].strip()
@@ -39,11 +37,15 @@ def ParseSignal(context, line):
     return Signal(sigtype, name, dtype, info)
 
     context[-1].AddSignal(Signal.FromString(line))
-    pass
 
 def ParseNode(context, line):
-    context[-1].AddNode(Node.FromString(line))
-    pass
+    regex = re.compile('node ([a-zA-Z_0-9]+)\\W*=\\W*(.*)(@\\[.*\\])?')
+    m = regex.match(line.strip())
+    name = m.groups('')[0].strip()
+    expr = m.groups('')[1].strip()
+    info = m.groups('')[2].strip()
+    node = Node(name, expr, info)
+    context[-1].AddNode(node)
 
 def ParseSkip(context, line):
     pass
@@ -82,6 +84,8 @@ def ParseStatement(context, line):
     context[-1].AddExpr(line.strip())
 
 def ParseFirrtl(f):
+    """Parse an opened firrtl into an Atlas model"""
+
     indent_level = 0
     prev_indent_level = 0
     indent_spaces = 0
