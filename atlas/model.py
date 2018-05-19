@@ -64,29 +64,16 @@ class Assignment():
         self.rhs = _rhs
 
 class Condition():
-    def __init__(self, _condition_str):
-        self.condition_str = _condition_str
+    def __init__(self, _condition_signal):
+        self.condition_signal = _condition_signal
         self.stmts = []
-        self.wires = {}
-        self.nodes = {}
+        self.signals = {}
 
     def AddStmt(self, stmt):
         self.stmts.append(stmt)
 
-    def AddWire(self, wire):
-        self.wires[wire.name] = wire
-
     def AddSignal(self, signal):
-        if signal.sigtype == 'wire':
-            self.AddWire(signal)
-        else:
-            raise NotImplementedError()
-
-    def AddNode(self, node):
-        self.nodes[node.name] = node
-
-    def __str__(self):
-        return 'when'
+        self.signals[signal.name] = signal
 
 class Module(object):
     def __init__(self, _name):

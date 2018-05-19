@@ -53,7 +53,7 @@ def ParseSkip(context, line):
 def ParseWhen(context, line):
     condition_str = line.strip().replace(':', ' ').split(' ')[1]
     cond = Condition(condition_str)
-    context[-1].AddExpr(cond)
+    context[-1].AddStmt(cond)
     context.append(cond)
 
 def ParseElse(context, line):

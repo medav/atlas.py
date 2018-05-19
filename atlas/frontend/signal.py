@@ -2,7 +2,8 @@ from .. import model
 from .module import *
 
 def LookupParentModule(signal):
-    while signal.parent is not None and type(signal.parent) != Module:
+    while signal.parent is not None and not issubclass(type(signal.parent), Module):
+        print(signal.parent)
         signal = signal.parent
 
     assert signal.parent is not None
@@ -18,7 +19,8 @@ class Bits(model.Bits):
         self.parent.Assign(other, self if child is None else child)
 
     def __enter__(self):
-        pass
+        module = LookupParentModule(self)
+        module
 
     def __exit__(self, *kwargs):
         pass
