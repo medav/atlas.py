@@ -24,6 +24,14 @@ class Module(model.Module):
         assert type(self.context[-1]) == model.Condition
         self.context.pop()
 
+    def Wire(self, signal):
+        signal.sigtype = model.Signal.WIRE
+        self.context[-1].AddSignal(signal)
+
+    def Reg(self, signal):
+        signal.sigtype = model.Signal.REG
+        self.context[-1].AddSignal(signal)
+
     def Assign(self, signal, child):
         self.context[-1].AddStmt(model.Assignment(child, signal))
 

@@ -63,20 +63,31 @@ class Assignment():
         self.lhs = _lhs
         self.rhs = _rhs
 
-class Condition():
-    def __init__(self, _condition_signal):
-        self.condition_signal = _condition_signal
+class StatementGroup():
+    def __init__(self):
         self.stmts = []
         self.signals = {}
+        self.nodes = {}
+
+    def AddSignal(self, signal):
+        self.signals[signal.name] = signal
+        self.AddStmt(signal)
+
+    def AddNode(self, node):
+        self.nodes[node.name] = node
+        self.AddStmt(node)
 
     def AddStmt(self, stmt):
         self.stmts.append(stmt)
 
-    def AddSignal(self, signal):
-        self.signals[signal.name] = signal
+class Condition(StatementGroup):
+    def __init__(self, _condition_signal):
+        StatementGroup.__init__(self)
+        self.condition_signal = _condition_signal
 
-class Module(object):
+class Module(StatementGroup):
     def __init__(self, _name):
+        StatementGroup.__init__(self)
         self.name = _name
         self.io = {}
         self.signals = {}
@@ -87,17 +98,8 @@ class Module(object):
     def AddIo(self, signal):
         self.io[signal.name] = signal
 
-    def AddSignal(self, signal):
-        self.signals[signal.name] = signal
-
-    def AddNode(self, node):
-        self.nodes[node.name] = node
-
     def AddInst(self, inst):
         self.insts[inst.name] = inst
-
-    def AddStmt(self, stmt):
-        self.stmts.append(stmt)
 
 class Circuit(object):
     def __init__(self, _name):

@@ -3,10 +3,7 @@ from .module import *
 
 def LookupParentModule(signal):
     while signal.parent is not None and not issubclass(type(signal.parent), Module):
-        print(signal.parent)
         signal = signal.parent
-
-    assert signal.parent is not None
 
     return signal.parent
 
@@ -19,11 +16,13 @@ class Bits(model.Bits):
         self.parent.Assign(other, self if child is None else child)
 
     def __enter__(self):
-        module = LookupParentModule(self)
-        module
+        self.module = LookupParentModule(self)
+        assert self.module is not None
+        self.module.StartCondition(self)
 
     def __exit__(self, *kwargs):
-        pass
+        assert self.module is not None
+        self.module.EndCondition
 
 class Bundle(model.Bundle):
     def __init__(self, _name, _dict):
@@ -35,11 +34,11 @@ class Bundle(model.Bundle):
 
 def Signed(signal):
     signal.signed = True
-    return
+    return signal
 
 def Unsigned(signal):
     signal.signed = False
-    return
+    return signal
 
 def Flip(signal):
     signal.sigdir = model.Signal.FLIPPED
