@@ -19,10 +19,10 @@ class Mux(Module):
     def Elaborate(self):
         io = self.io
 
-        with Condition(io.sel):
+        with io.sel:
             io.out.Assign(io.b)
 
-        with Else():
+        with Else:
             io.out.Assign(io.a)
 
 pt = Elaborate(Mux('mymux'))
