@@ -33,21 +33,22 @@ class Context(object):
     def __exit__(self, *args):
         self.fw.Dedent()
 
-def SignalTypeString(sigtype):
-    return {
-        Signal.INPUT: 'input',
-        Signal.OUTPUT: 'output',
-        Signal.WIRE: 'wire',
-        Signal.REG: 'reg',
-        Signal.NODE: 'node'
-    }[sigtype]
+signal_dir_name = {
+    Signal.INPUT: 'input',
+    Signal.OUTPUT: 'output',
+}
 
-def EmitSignal(fw, sig):
-    fw.WriteLine('{} {}: {} {}'.format(SignalTypeString(sig.sigtype), sig.name, '', ''))
+signal_type_name = {
+    Signal.WIRE: 'wire',
+    Signal.REG: 'reg',
+}
+
+def EmitSignal(fw, signal):
+    fw.WriteLine('{} {}: {} {}'.format(signal_type_name[signal.sigtype], signal.name, '', ''))
 
 def EmitIo(fw, module):
     for signal in module.io:
-        EmitSignal(fw, signal)
+        fw.WriteLine('{} {}: {} {}'.format(signal_dir_name[signal.sigdir], signal.name, '', ''))
 
 def EmitModule(fw, module):
     with Context(fw, 'module', module.name):

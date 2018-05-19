@@ -9,21 +9,19 @@ def LookupParentModule(signal):
 
     return signal.parent
 
-class Signal(model.Signal):
-    def __init__(self, _name):
-        model.Signal.__init__(_name)
-
-    def Assign(self, other, child=None):
-        assert self.parent is not None
-        self.parent.Assign(other, self if child is None else child)
-
 class Bits(model.Bits):
-    def __init__(self, _name, _width, _signed=False):
+    def __init__(self, _width, _name='bits', _signed=False):
         model.Bits.__init__(self, _name, _width, _signed)
 
     def Assign(self, other, child=None):
         assert self.parent is not None
         self.parent.Assign(other, self if child is None else child)
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *kwargs):
+        pass
 
 class Bundle(model.Bundle):
     def __init__(self, _name, _dict):
@@ -32,7 +30,6 @@ class Bundle(model.Bundle):
     def Assign(self, other, child=None):
         assert self.parent is not None
         self.parent.Assign(other, self if child is None else child)
-
 
 def Signed(signal):
     signal.signed = True
@@ -43,15 +40,15 @@ def Unsigned(signal):
     return
 
 def Flip(signal):
-    signal.sigtype = Signal.FLIPPED
+    signal.sigdir = model.Signal.FLIPPED
     return signal
 
 def Input(signal):
-    signal.sigtype = Signal.INPUT
+    signal.sigdir = model.Signal.INPUT
     return signal
 
 def Output(signal):
-    signal.sigtype = Signal.OUTPUT
+    signal.sigdir = model.Signal.OUTPUT
     return signal
 
 def Io(_dict):

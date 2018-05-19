@@ -1,7 +1,9 @@
 import atlas.firrtl.emitter as emitter
 from atlas.frontend.context import *
 from atlas.frontend.elaborate import *
-from atlas.backend.signals import *
+from atlas.frontend.module import *
+from atlas.frontend.condition import *
+from atlas.frontend.signal import *
 
 CreateDefaultCircuit('top')
 
