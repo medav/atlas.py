@@ -7,6 +7,20 @@ def LookupParentModule(signal):
 
     return signal.parent
 
+class Node(model.Node):
+    def __init__(self, _name, _primop, _args):
+        model.Node.__init__(self, _name, _primop, _args)
+
+    def __enter__(self):
+        assert self.parent is not None
+        assert issubclass(type(self.parent), Module)
+        self.parent.StartCondition(self)
+
+    def __exit__(self, *kwargs):
+        assert self.parent is not None
+        assert issubclass(type(self.parent), Module)
+        self.parent.EndCondition
+
 class Bits(model.Bits):
     def __init__(self, _width, _name='bits', _signed=False):
         model.Bits.__init__(self, _name, _width, _signed)

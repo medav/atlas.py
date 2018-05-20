@@ -26,7 +26,7 @@ class Context(object):
         self.info = _info
 
     def __enter__(self):
-        self.fw.WriteLine(self.prefix + ' ' + self.name + ' : ' + self.info)
+        self.fw.WriteLine(self.prefix + ' ' + self.name + ' :' + self.info)
         self.fw.Indent()
 
     def __exit__(self, *args):
@@ -46,15 +46,26 @@ def SignalName(signal):
 
     return name
 
+def NodeName(node):
+    return node.name
+
+def NameOf(item):
+    if issubclass(type(item), Node):
+        return NodeName(item)
+    elif issubclass(type(item), Signal):
+        return SignalName(item)
+    else:
+        raise RuntimeError('Unknown type: {}'.format(type(item)))
+
 def EmitSignal(fw, signal):
-    fw.WriteLine('{} {}: {} {}'.format(signal_type_name[signal.sigtype], signal.name, '', ''))
+    fw.WriteLine('{} {}:'.format(signal_type_name[signal.sigtype], signal.name))
 
 def EmitNode(fw, node):
     fw.WriteLine('node')
 
 def EmitAssignment(fw, assignment):
-    lname = SignalName(assignment.lhs)
-    rname = SignalName(assignment.rhs)
+    lname = NameOf(assignment.lhs)
+    rname = NameOf(assignment.rhs)
     fw.WriteLine('{} <= {}'.format(lname, rname))
 
 stmt_emit_map = {
@@ -66,7 +77,7 @@ stmt_emit_map = {
 def EmitStmts(fw, context):
     for stmt in context.stmts:
         if type(stmt) is Condition:
-            with Context(fw, 'when', ''):
+            with Context(fw, 'when', NameOf(stmt.condition)):
                 EmitStmts(fw, stmt)
         else:
             stmt_emit_map[type(stmt)](fw, stmt)
@@ -78,7 +89,7 @@ signal_dir_name = {
 
 def EmitIo(fw, module):
     for signal in module.io:
-        fw.WriteLine('{} {}: {} {}'.format(signal_dir_name[signal.sigdir], signal.name, '', ''))
+        fw.WriteLine('{} {}:'.format(signal_dir_name[signal.sigdir], signal.name))
 
 def EmitModule(fw, module):
     with Context(fw, 'module', module.name):

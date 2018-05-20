@@ -81,9 +81,9 @@ class StatementGroup():
         self.stmts.append(stmt)
 
 class Condition(StatementGroup):
-    def __init__(self, _condition_signal):
+    def __init__(self, _condition):
         StatementGroup.__init__(self)
-        self.condition_signal = _condition_signal
+        self.condition = _condition
 
 class Module(StatementGroup):
     def __init__(self, _name):
