@@ -24,9 +24,10 @@ class Signal():
         self.parent = None
 
 class Bits(Signal):
-    def __init__(self, _name, _width, _signed=False):
+    def __init__(self, _name, _width, _length=1, _signed=False):
         Signal.__init__(self, _name)
         self.width = _width
+        self.length = _length
         self.signed = _signed
         self.parent = None
 

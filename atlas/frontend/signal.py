@@ -22,8 +22,8 @@ class Node(model.Node):
         self.parent.EndCondition
 
 class Bits(model.Bits):
-    def __init__(self, _width, _name='bits', _signed=False):
-        model.Bits.__init__(self, _name, _width, _signed)
+    def __init__(self, _width, _name='bits', _length=1, _signed=False):
+        model.Bits.__init__(self, _name, _width, _length, _signed)
 
     def Assign(self, other, child=None):
         assert self.parent is not None

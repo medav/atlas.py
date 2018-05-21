@@ -1,12 +1,14 @@
 from ..model import *
 
+indent_str = '  '
+
 class FileWriter(object):
     def __init__(self, _f):
         self.f = _f
         self.indent = 0
 
     def WriteLine(self, line):
-        self.f.write('    ' * self.indent + line + '\n')
+        self.f.write(indent_str * self.indent + line + '\n')
 
     def WriteLines(self, line):
         for line in lines:
@@ -26,16 +28,11 @@ class Context(object):
         self.info = _info
 
     def __enter__(self):
-        self.fw.WriteLine(self.prefix + ' ' + self.name + ' :' + self.info)
+        self.fw.WriteLine(self.prefix + ' ' + self.name + ':' + self.info)
         self.fw.Indent()
 
     def __exit__(self, *args):
         self.fw.Dedent()
-
-signal_type_name = {
-    Signal.WIRE: 'wire',
-    Signal.REG: 'reg',
-}
 
 def SignalName(signal):
     name = signal.name
@@ -57,8 +54,55 @@ def NameOf(item):
     else:
         raise RuntimeError('Unknown type: {}'.format(type(item)))
 
+def SignalTypeToString(signal):
+    if issubclass(type(signal), Bits):
+        base_type = "UInt"
+        if signal.signed:
+            base_type = "SInt"
+        
+        if signal.length == 1:
+            return '{}<{}>'.format(base_type, signal.width)
+        else:
+            return '{}<{}>[{}]'.format(base_type, signal.width, signal.length)
+
+    elif issubclass(type(signal), Bundle):
+        subfields = []
+
+        for subsig in signal:
+            subsig_str = 'flip ' if subsig.sigdir == Signal.FLIPPED else ''
+            subsig_str += subsig.name
+            subsig_str += ': ' + SignalTypeToString(subsig)
+            subfields.append(subsig_str)
+
+        return '{' + ', '.join(subfields) + '}'
+    
+    else:
+        raise NotImplementedError('Cannot serialize signal type: {}'.format(signal))
+
+signal_type_name = {
+    Signal.WIRE: 'wire',
+    Signal.REG: 'reg',
+}
+
 def EmitSignal(fw, signal):
-    fw.WriteLine('{} {}:'.format(signal_type_name[signal.sigtype], signal.name))
+    fw.WriteLine(
+        '{} {}: {}'.format(
+            signal_type_name[signal.sigtype], 
+            signal.name,
+            SignalTypeToString(signal)))
+
+signal_dir_name = {
+    Signal.INPUT: 'input',
+    Signal.OUTPUT: 'output',
+}
+
+def EmitIo(fw, module):
+    for signal in module.io:
+        fw.WriteLine(
+            '{} {}: {}'.format(
+                signal_dir_name[signal.sigdir],
+                signal.name,
+                SignalTypeToString(signal)))
 
 def EmitNode(fw, node):
     fw.WriteLine('node')
@@ -81,15 +125,6 @@ def EmitStmts(fw, context):
                 EmitStmts(fw, stmt)
         else:
             stmt_emit_map[type(stmt)](fw, stmt)
-
-signal_dir_name = {
-    Signal.INPUT: 'input',
-    Signal.OUTPUT: 'output',
-}
-
-def EmitIo(fw, module):
-    for signal in module.io:
-        fw.WriteLine('{} {}:'.format(signal_dir_name[signal.sigdir], signal.name))
 
 def EmitModule(fw, module):
     with Context(fw, 'module', module.name):
