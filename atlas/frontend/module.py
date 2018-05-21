@@ -1,5 +1,7 @@
 from .. import model
 
+__all__ = ['Module']
+
 class Module(model.Module):
     def __init__(self, _name):
         model.Module.__init__(self, _name)

@@ -1,7 +1,5 @@
 import atlas.firrtl.emitter as emitter
-from atlas.frontend.circuit import *
-from atlas.frontend.module import *
-from atlas.frontend.signal import *
+from atlas.frontend import *
 
 circuit = Circuit('mymux')
 
@@ -23,4 +21,5 @@ class Mux(Module):
 
 mux = Mux('mymux')
 circuit.ElaborateModule(mux)
+
 emitter.EmitFirrtl('mux.fir', circuit)
