@@ -3,7 +3,7 @@ from atlas.frontend.circuit import *
 from atlas.frontend.module import *
 from atlas.frontend.signal import *
 
-circuit = Circuit('top')
+circuit = Circuit('mymux')
 
 class Mux(Module):
     def __init__(self, _name):
@@ -17,9 +17,7 @@ class Mux(Module):
 
     def Elaborate(self):
         io = self.io
-
         io.out.Assign(io.a)
-
         with io.sel:
             io.out.Assign(io.b)
 

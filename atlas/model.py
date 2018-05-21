@@ -11,7 +11,7 @@ class Signal():
     # Signal directions
     INPUT = 0
     OUTPUT = 1
-    FLIPPED = 2
+    FLIP = 2
 
     # Signal types
     WIRE = 0
@@ -24,7 +24,7 @@ class Signal():
         self.parent = None
 
 class Bits(Signal):
-    def __init__(self, _name, _width, _length=1, _signed=False):
+    def __init__(self, _width, _name='bits', _length=1, _signed=False):
         Signal.__init__(self, _name)
         self.width = _width
         self.length = _length
@@ -32,7 +32,7 @@ class Bits(Signal):
         self.parent = None
 
 class Bundle(Signal):
-    def __init__(self, _name, _dict):
+    def __init__(self, _dict, _name='bundle'):
         Signal.__init__(self, _name)
         self.signal_names = []
 

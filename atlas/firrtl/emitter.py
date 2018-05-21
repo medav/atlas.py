@@ -66,15 +66,13 @@ def SignalTypeToString(signal):
             return '{}<{}>[{}]'.format(base_type, signal.width, signal.length)
 
     elif issubclass(type(signal), Bundle):
-        subfields = []
-
-        for subsig in signal:
-            subsig_str = 'flip ' if subsig.sigdir == Signal.FLIPPED else ''
-            subsig_str += subsig.name
-            subsig_str += ': ' + SignalTypeToString(subsig)
-            subfields.append(subsig_str)
-
-        return '{' + ', '.join(subfields) + '}'
+        return '{' + ', '.join([
+            ('flip ' if s.sigdir == Signal.FLIP else '') +
+            s.name +
+            ': ' + 
+            SignalTypeToString(s)
+            for s in signal
+        ]) + '}'
     
     else:
         raise NotImplementedError('Cannot serialize signal type: {}'.format(signal))
@@ -97,12 +95,7 @@ signal_dir_name = {
 }
 
 def EmitIo(fw, module):
-    for signal in module.io:
-        fw.WriteLine(
-            '{} {}: {}'.format(
-                signal_dir_name[signal.sigdir],
-                signal.name,
-                SignalTypeToString(signal)))
+    fw.WriteLine('output io: {}'.format(SignalTypeToString(module.io)))
 
 def EmitNode(fw, node):
     fw.WriteLine('node')

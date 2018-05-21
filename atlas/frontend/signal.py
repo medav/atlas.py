@@ -23,7 +23,7 @@ class Node(model.Node):
 
 class Bits(model.Bits):
     def __init__(self, _width, _name='bits', _length=1, _signed=False):
-        model.Bits.__init__(self, _name, _width, _length, _signed)
+        model.Bits.__init__(self, _width, _name, _length, _signed)
 
     def Assign(self, other, child=None):
         assert self.parent is not None
@@ -39,8 +39,8 @@ class Bits(model.Bits):
         self.module.EndCondition
 
 class Bundle(model.Bundle):
-    def __init__(self, _name, _dict):
-        model.Bundle.__init__(self, _name, _dict)
+    def __init__(self, _dict, _name='bundle'):
+        model.Bundle.__init__(self, _dict, _name=_name)
 
     def Assign(self, other, child=None):
         assert self.parent is not None
@@ -55,7 +55,7 @@ def Unsigned(signal):
     return signal
 
 def Flip(signal):
-    signal.sigdir = model.Signal.FLIPPED
+    signal.sigdir = model.Signal.FLIP
     return signal
 
 def Input(signal):
@@ -67,4 +67,10 @@ def Output(signal):
     return signal
 
 def Io(_dict):
-    return Bundle('io', _dict)
+    io = Bundle(_dict, _name='io')
+
+    for s in io:
+        if s.sigdir == model.Signal.INPUT:
+            Flip(s)
+
+    return io
