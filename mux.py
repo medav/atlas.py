@@ -1,25 +1,21 @@
 import atlas.firrtl.emitter as emitter
 from atlas.frontend import *
 
+@Module
+def Mux(n):
+    io = Io({
+        'a': Input(Bits(n)),
+        'b': Input(Bits(n)),
+        'sel': Input(Bits(1)),
+        'out': Output(Bits(n))
+    })
+
+    io.out.Assign(io.a)
+    with io.sel:
+        io.out.Assign(io.b)
+
 circuit = Circuit('mymux')
-
-class Mux(Module):
-    def __init__(self, _name):
-        Module.__init__(self, _name)
-        self.io = Io({
-            'a': Input(Bits(1)),
-            'b': Input(Bits(1)),
-            'sel': Input(Bits(1)),
-            'out': Output(Bits(1))
-        })
-
-    def Elaborate(self):
-        io = self.io
-        io.out.Assign(io.a)
-        with io.sel:
-            io.out.Assign(io.b)
-
-mux = Mux('mymux')
-circuit.ElaborateModule(mux)
+with circuit:
+    Mux(8)
 
 emitter.EmitFirrtl('mux.fir', circuit)
