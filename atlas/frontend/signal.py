@@ -1,5 +1,5 @@
 from .. import model
-from .module import *
+from .base import *
 
 __all__ = [
     'Node',
@@ -13,50 +13,35 @@ __all__ = [
     'Io'
 ]
 
-def LookupParentModule(signal):
-    while signal.parent is not None and not issubclass(type(signal.parent), Module):
-        signal = signal.parent
-
-    return signal.parent
-
 class Node(model.Node):
     def __init__(self, _name, _primop, _args):
         model.Node.__init__(self, _name, _primop, _args)
 
     def __enter__(self):
-        assert self.parent is not None
-        assert issubclass(type(self.parent), Module)
-        self.parent.StartCondition(self)
+        self.condition = StartCondition(self)
 
     def __exit__(self, *kwargs):
-        assert self.parent is not None
-        assert issubclass(type(self.parent), Module)
-        self.parent.EndCondition
+        EndCondition(self.condition)
 
 class Bits(model.Bits):
     def __init__(self, _width, _name='bits', _length=1, _signed=False):
         model.Bits.__init__(self, _width, _name, _length, _signed)
 
-    def Assign(self, other, child=None):
-        assert self.parent is not None
-        self.parent.Assign(other, self if child is None else child)
+    def Assign(self, other):
+        CurrentContext().AddStmt(model.Assignment(self, other))
 
     def __enter__(self):
-        self.module = LookupParentModule(self)
-        assert self.module is not None
-        self.module.StartCondition(self)
+        self.condition = StartCondition(self)
 
     def __exit__(self, *kwargs):
-        assert self.module is not None
-        self.module.EndCondition
+        EndCondition(self.condition)
 
 class Bundle(model.Bundle):
     def __init__(self, _dict, _name='bundle'):
         model.Bundle.__init__(self, _dict, _name=_name)
 
-    def Assign(self, other, child=None):
-        assert self.parent is not None
-        self.parent.Assign(other, self if child is None else child)
+    def Assign(self, other):
+        CurrentContext().AddStmt(model.Assignment(self, other))
 
 def Signed(signal):
     signal.signed = True
@@ -85,4 +70,17 @@ def Io(_dict):
         if s.sigdir == model.Signal.INPUT:
             Flip(s)
 
+    CurrentModule().io = io
+    io.parent = CurrentModule()
     return io
+
+def Wire(signal):
+    signal.sigtype = model.Signal.WIRE
+    CurrentContext().AddSignal(signal)
+
+def Reg(signal):
+    signal.sigtype = model.Signal.REG
+    CurrentContext().AddSignal(signal)
+
+def Assign(signal, child):
+    CurrentContext().AddStmt(model.Assignment(child, signal))
