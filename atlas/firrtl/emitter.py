@@ -1,4 +1,5 @@
 from ..model import *
+from .shared import *
 
 indent_str = '  '
 
@@ -77,22 +78,12 @@ def SignalTypeToString(signal):
     else:
         raise NotImplementedError('Cannot serialize signal type: {}'.format(signal))
 
-signal_type_name = {
-    Signal.WIRE: 'wire',
-    Signal.REG: 'reg',
-}
-
 def EmitSignal(fw, signal):
     fw.WriteLine(
         '{} {}: {}'.format(
-            signal_type_name[signal.sigtype], 
+            signal_type_str[signal.sigtype], 
             signal.name,
             SignalTypeToString(signal)))
-
-signal_dir_name = {
-    Signal.INPUT: 'input',
-    Signal.OUTPUT: 'output',
-}
 
 def EmitIo(fw, module):
     fw.WriteLine('output io: {}'.format(SignalTypeToString(module.io)))
