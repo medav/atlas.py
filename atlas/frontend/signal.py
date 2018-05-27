@@ -10,12 +10,18 @@ __all__ = [
     'Flip',
     'Input',
     'Output',
-    'Io'
+    'Io',
+    'Wire',
+    'Reg',
+    'NameSignals'
 ]
 
 class Node(model.Node):
-    def __init__(self, _name, _primop, _args):
-        model.Node.__init__(self, _name, _primop, _args)
+    uid = 0
+
+    def __init__(self, _primop, _args):
+        model.Node.__init__(self, f'node_{Node.uid}', _primop, _args)
+        Node.uid += 1
 
     def __enter__(self):
         self.condition = StartCondition(self)
@@ -23,18 +29,64 @@ class Node(model.Node):
     def __exit__(self, *kwargs):
         EndCondition(self.condition)
 
+    def __or__(self, other):
+        n = Node('or', [self, other])
+        CurrentContext().AddNode(n)
+        return n
+
+    def __xor__(self, other):
+        n = Node('xor', [self, other])
+        CurrentContext().AddNode(n)
+        return n
+
+    def __and__(self, other):
+        n = Node('and', [self, other])
+        CurrentContext().AddNode(n)
+        return n
+
 class Bits(model.Bits):
-    def __init__(self, _width, _name='bits', _length=1, _signed=False):
-        model.Bits.__init__(self, _width, _name, _length, _signed)
+    def __init__(self, _elemwidth, _shape=(1,), _name='bits', _signed=False):
+        model.Bits.__init__(self, _elemwidth, _shape, _name, _signed)
 
     def Assign(self, other):
         CurrentContext().AddStmt(model.Assignment(self, other))
 
+    def __le__(self, other):
+        self.Assign(other)
+
     def __enter__(self):
         self.condition = StartCondition(self)
 
     def __exit__(self, *kwargs):
         EndCondition(self.condition)
+
+    def __getitem__(self, key):
+        return BitsElement(self, key)
+
+class BitsElement(model.BitsElement):
+    def __init__(self, _parent, _key):
+        model.BitsElement.__init__(self, _parent, _key)
+
+    def Assign(self, other):
+        CurrentContext().AddStmt(model.Assignment(self, other))
+
+    def __le__(self, other):
+        self.Assign(other)
+
+    def __or__(self, other):
+        n = Node('or', [self, other])
+        CurrentContext().AddNode(n)
+        return n
+
+    def __xor__(self, other):
+        n = Node('xor', [self, other])
+        CurrentContext().AddNode(n)
+        return n
+
+    def __and__(self, other):
+        n = Node('and', [self, other])
+        CurrentContext().AddNode(n)
+        return n
 
 class Bundle(model.Bundle):
     def __init__(self, _dict, _name='bundle'):
@@ -42,6 +94,9 @@ class Bundle(model.Bundle):
 
     def Assign(self, other):
         CurrentContext().AddStmt(model.Assignment(self, other))
+
+    def __le__(self, other):
+        self.Assign(other)
 
 def Signed(signal):
     signal.signed = True
@@ -77,10 +132,17 @@ def Io(_dict):
 def Wire(signal):
     signal.sigtype = model.Signal.WIRE
     CurrentContext().AddSignal(signal)
+    return signal
 
 def Reg(signal):
     signal.sigtype = model.Signal.REG
     CurrentContext().AddSignal(signal)
+    return signal
 
 def Assign(signal, child):
     CurrentContext().AddStmt(model.Assignment(child, signal))
+
+def NameSignals(locals):
+    for local in locals:
+        if issubclass(type(locals[local]), model.Signal):
+            locals[local].name = local

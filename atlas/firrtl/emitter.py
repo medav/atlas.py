@@ -38,6 +38,10 @@ class Context(object):
 def SignalName(signal):
     name = signal.name
 
+    if issubclass(type(signal), BitsElement):
+        signal = signal.parent
+        name = signal.name + name
+
     while signal.parent is not None and not issubclass(type(signal.parent), Module):
         name = signal.parent.name + '.' + name
         signal = signal.parent
@@ -61,10 +65,10 @@ def SignalTypeToString(signal):
         if signal.signed:
             base_type = "SInt"
         
-        if signal.length == 1:
-            return '{}<{}>'.format(base_type, signal.width)
+        if signal.shape == (1,):
+            return '{}<{}>'.format(base_type, signal.elemwidth)
         else:
-            return '{}<{}>[{}]'.format(base_type, signal.width, signal.length)
+            return '{}<{}>[{}]'.format(base_type, signal.elemwidth, signal.shape[0])
 
     elif issubclass(type(signal), Bundle):
         return '{' + ', '.join([
@@ -89,7 +93,8 @@ def EmitIo(fw, module):
     fw.WriteLine('output io: {}'.format(SignalTypeToString(module.io)))
 
 def EmitNode(fw, node):
-    fw.WriteLine('node')
+    str_args = ', '.join([NameOf(arg) for arg in node.args])
+    fw.WriteLine(f'node {node.name} = {node.primop}({str_args})')
 
 def EmitAssignment(fw, assignment):
     lname = NameOf(assignment.lhs)
@@ -108,7 +113,9 @@ def EmitStmts(fw, context):
             with Context(fw, 'when', NameOf(stmt.condition)):
                 EmitStmts(fw, stmt)
         else:
-            stmt_emit_map[type(stmt)](fw, stmt)
+            for key in stmt_emit_map:
+                if issubclass(type(stmt), key):
+                    stmt_emit_map[key](fw, stmt)
 
 def EmitModule(fw, module):
     with Context(fw, 'module', module.name):

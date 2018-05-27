@@ -3,7 +3,7 @@ import re
 class Node(object):
     def __init__(self, _name, _primop, _args):
         self.name = _name
-        self.primop = primop
+        self.primop = _primop
         self.args = _args
 
 class Signal():
@@ -24,12 +24,17 @@ class Signal():
         self.parent = None
 
 class Bits(Signal):
-    def __init__(self, _width, _name='bits', _length=1, _signed=False):
+    def __init__(self, _elemwidth, _shape=(1), _name='bits', _signed=False):
         Signal.__init__(self, _name)
-        self.width = _width
-        self.length = _length
+        self.elemwidth = _elemwidth
+        self.shape = _shape
         self.signed = _signed
         self.parent = None
+
+class BitsElement(Signal):
+    def __init__(self, _parent, _key):
+        Signal.__init__(self, f'[{str(_key)}]')
+        self.parent = _parent
 
 class Bundle(Signal):
     def __init__(self, _dict, _name='bundle'):
