@@ -22,11 +22,11 @@ def RippleAdder(n):
     out_arr = Wire(Bits(1, (n,)))
 
     for i in range(n):
-        sum_i, carry = FullAdder(carry, io.a[i], io.b[i])
+        sum_i, carry = FullAdder(carry, io.a(i, i), io.b(i, i))
         out_arr[i] <= sum_i
     
     io.cout <= carry
-    io.sum_out <= out_arr
+    io.sum_out <= Cat([out_arr[n - i - 1] for i in range(n)])
 
     NameSignals(locals())
 

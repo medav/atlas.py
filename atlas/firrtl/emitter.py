@@ -57,7 +57,7 @@ def NameOf(item):
     elif issubclass(type(item), Signal):
         return SignalName(item)
     else:
-        raise RuntimeError('Unknown type: {}'.format(type(item)))
+        return str(item)
 
 def SignalTypeToString(signal):
     if issubclass(type(signal), Bits):

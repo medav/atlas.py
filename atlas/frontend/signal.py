@@ -13,7 +13,8 @@ __all__ = [
     'Io',
     'Wire',
     'Reg',
-    'NameSignals'
+    'NameSignals',
+    'Cat'
 ]
 
 class Node(model.Node):
@@ -59,6 +60,11 @@ class Bits(model.Bits):
 
     def __exit__(self, *kwargs):
         EndCondition(self.condition)
+
+    def __call__(self, high, low):
+        n = Node('bits', [self, high, low])
+        CurrentContext().AddNode(n)
+        return n
 
     def __getitem__(self, key):
         return BitsElement(self, key)
@@ -138,6 +144,22 @@ def Reg(signal):
     signal.sigtype = model.Signal.REG
     CurrentContext().AddSignal(signal)
     return signal
+
+def Cat(signals):
+    if len(signals) == 1:
+        return signals[0]
+
+    elif len(signals) == 2:
+        n = Node('cat', signals)
+        CurrentContext().AddNode(n)
+        return n
+
+    else:
+        half = int(len(signals) / 2)
+        n1 = Cat(signals[:half])
+        n2 = Cat(signals[half:])
+        return Cat([n1, n2])
+
 
 def Assign(signal, child):
     CurrentContext().AddStmt(model.Assignment(child, signal))
