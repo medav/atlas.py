@@ -83,13 +83,16 @@ def SignalTypeToString(signal):
         raise NotImplementedError('Cannot serialize signal type: {}'.format(signal))
 
 def EmitSignal(fw, signal):
-    fw.WriteLine(
-        '{} {}: {}'.format(
-            signal_type_str[signal.sigtype], 
-            signal.name,
-            SignalTypeToString(signal)))
+    if signal.sigtype == Signal.WIRE:
+        fw.WriteLine(f'{signal_type_str[signal.sigtype]} {signal.name}: {SignalTypeToString(signal)}')
+    elif signal.sigtype == Signal.REG:
+        fw.WriteLine(f'{signal_type_str[signal.sigtype]} {signal.name}: {SignalTypeToString(signal)}, clock')
 
 def EmitIo(fw, module):
+    if module.has_state:
+        fw.WriteLine('input clock: Clock')
+        fw.WriteLine('input reset: UInt<1>')
+
     fw.WriteLine('output io: {}'.format(SignalTypeToString(module.io)))
 
 def EmitNode(fw, node):
@@ -99,7 +102,7 @@ def EmitNode(fw, node):
 def EmitAssignment(fw, assignment):
     lname = NameOf(assignment.lhs)
     rname = NameOf(assignment.rhs)
-    fw.WriteLine('{} <= {}'.format(lname, rname))
+    fw.WriteLine(f'{lname} <= {rname}')
 
 stmt_emit_map = {
     Signal: EmitSignal,

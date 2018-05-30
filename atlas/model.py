@@ -1,10 +1,16 @@
 import re
 
-class Node(object):
+class Node():
     def __init__(self, _name, _primop, _args):
         self.name = _name
         self.primop = _primop
         self.args = _args
+
+class Literal():
+    def __init__(self, _value, _bitwidth=0, _signed=False):
+        self.value = _value
+        self.bitwidth = _bitwidth
+        self.signed = _signed
 
 class Signal():
 
@@ -100,6 +106,7 @@ class Module(StatementGroup):
         self.nodes = {}
         self.insts = {}
         self.stmts = []
+        self.has_state = False
 
     def AddIo(self, signal):
         self.io[signal.name] = signal

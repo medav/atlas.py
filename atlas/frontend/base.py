@@ -57,7 +57,6 @@ def ContainsSignal(signal):
 
 def StartCondition(signal):
     global context
-    assert ContainsSignal(signal)
     condition = model.Condition(signal)
     CurrentContext().AddStmt(condition)
     context.append(condition)

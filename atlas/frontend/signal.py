@@ -17,11 +17,21 @@ __all__ = [
     'Cat'
 ]
 
+def BinaryOp(op, a, b):
+    n = Node(op, [a, b])
+    CurrentContext().AddNode(n)
+    return n
+
+def ConvertLiterals(args):
+    for i in range(len(args)):
+        if type(args[i]) is int:
+            
+
 class Node(model.Node):
     uid = 0
 
     def __init__(self, _primop, _args):
-        model.Node.__init__(self, f'node_{Node.uid}', _primop, _args)
+        model.Node.__init__(self, f'node_{Node.uid}', _primop, ConvertLiterals(_args))
         Node.uid += 1
 
     def __enter__(self):
@@ -30,20 +40,19 @@ class Node(model.Node):
     def __exit__(self, *kwargs):
         EndCondition(self.condition)
 
-    def __or__(self, other):
-        n = Node('or', [self, other])
-        CurrentContext().AddNode(n)
-        return n
-
-    def __xor__(self, other):
-        n = Node('xor', [self, other])
-        CurrentContext().AddNode(n)
-        return n
-
-    def __and__(self, other):
-        n = Node('and', [self, other])
-        CurrentContext().AddNode(n)
-        return n
+    def __add__(self, other): return BinaryOp('add', self, other)
+    def __sub__(self, other): return BinaryOp('sub', self, other)
+    def __mul__(self, other): return BinaryOp('mul', self, other)
+    def __div__(self, other): return BinaryOp('div', self, other)
+    def __or__(self, other): return BinaryOp('op', self, other)
+    def __xor__(self, other): return BinaryOp('xor', self, other)
+    def __and__(self, other): return BinaryOp('and', self, other)
+    def __gt__(self, other): return BinaryOp('gt', self, other)
+    def __lt__(self, other): return BinaryOp('lt', self, other)
+    def __ge__(self, other): return BinaryOp('ge', self, other)
+    def __le__(self, other): return BinaryOp('le', self, other)
+    def __eq__(self, other): return BinaryOp('eq', self, other)
+    def __neq__(self, other): return BinaryOp('neq', self, other)
 
 class Bits(model.Bits):
     def __init__(self, _elemwidth, _shape=(1,), _name='bits', _signed=False):
@@ -52,8 +61,9 @@ class Bits(model.Bits):
     def Assign(self, other):
         CurrentContext().AddStmt(model.Assignment(self, other))
 
-    def __le__(self, other):
+    def __ilshift__(self, other):
         self.Assign(other)
+        return self
 
     def __enter__(self):
         self.condition = StartCondition(self)
@@ -69,6 +79,20 @@ class Bits(model.Bits):
     def __getitem__(self, key):
         return BitsElement(self, key)
 
+    def __add__(self, other): return BinaryOp('add', self, other)
+    def __sub__(self, other): return BinaryOp('sub', self, other)
+    def __mul__(self, other): return BinaryOp('mul', self, other)
+    def __div__(self, other): return BinaryOp('div', self, other)
+    def __or__(self, other): return BinaryOp('op', self, other)
+    def __xor__(self, other): return BinaryOp('xor', self, other)
+    def __and__(self, other): return BinaryOp('and', self, other)
+    def __gt__(self, other): return BinaryOp('gt', self, other)
+    def __lt__(self, other): return BinaryOp('lt', self, other)
+    def __ge__(self, other): return BinaryOp('ge', self, other)
+    def __le__(self, other): return BinaryOp('le', self, other)
+    def __eq__(self, other): return BinaryOp('eq', self, other)
+    def __neq__(self, other): return BinaryOp('neq', self, other)
+
 class BitsElement(model.BitsElement):
     def __init__(self, _parent, _key):
         model.BitsElement.__init__(self, _parent, _key)
@@ -76,23 +100,23 @@ class BitsElement(model.BitsElement):
     def Assign(self, other):
         CurrentContext().AddStmt(model.Assignment(self, other))
 
-    def __le__(self, other):
+    def __ilshift__(self, other):
         self.Assign(other)
+        return self
 
-    def __or__(self, other):
-        n = Node('or', [self, other])
-        CurrentContext().AddNode(n)
-        return n
-
-    def __xor__(self, other):
-        n = Node('xor', [self, other])
-        CurrentContext().AddNode(n)
-        return n
-
-    def __and__(self, other):
-        n = Node('and', [self, other])
-        CurrentContext().AddNode(n)
-        return n
+    def __add__(self, other): return BinaryOp('add', self, other)
+    def __sub__(self, other): return BinaryOp('sub', self, other)
+    def __mul__(self, other): return BinaryOp('mul', self, other)
+    def __div__(self, other): return BinaryOp('div', self, other)
+    def __or__(self, other): return BinaryOp('op', self, other)
+    def __xor__(self, other): return BinaryOp('xor', self, other)
+    def __and__(self, other): return BinaryOp('and', self, other)
+    def __gt__(self, other): return BinaryOp('gt', self, other)
+    def __lt__(self, other): return BinaryOp('lt', self, other)
+    def __ge__(self, other): return BinaryOp('ge', self, other)
+    def __le__(self, other): return BinaryOp('le', self, other)
+    def __eq__(self, other): return BinaryOp('eq', self, other)
+    def __neq__(self, other): return BinaryOp('neq', self, other)
 
 class Bundle(model.Bundle):
     def __init__(self, _dict, _name='bundle'):
@@ -101,8 +125,9 @@ class Bundle(model.Bundle):
     def Assign(self, other):
         CurrentContext().AddStmt(model.Assignment(self, other))
 
-    def __le__(self, other):
+    def __ilshift__(self, other):
         self.Assign(other)
+        return self
 
 def Signed(signal):
     signal.signed = True
@@ -142,24 +167,9 @@ def Wire(signal):
 
 def Reg(signal):
     signal.sigtype = model.Signal.REG
+    CurrentModule().has_state = True
     CurrentContext().AddSignal(signal)
     return signal
-
-def Cat(signals):
-    if len(signals) == 1:
-        return signals[0]
-
-    elif len(signals) == 2:
-        n = Node('cat', signals)
-        CurrentContext().AddNode(n)
-        return n
-
-    else:
-        half = int(len(signals) / 2)
-        n1 = Cat(signals[:half])
-        n2 = Cat(signals[half:])
-        return Cat([n1, n2])
-
 
 def Assign(signal, child):
     CurrentContext().AddStmt(model.Assignment(child, signal))
