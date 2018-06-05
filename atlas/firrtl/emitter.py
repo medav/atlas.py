@@ -51,11 +51,21 @@ def SignalName(signal):
 def NodeName(node):
     return node.name
 
+def ConstantName(const):
+    return (
+        ('S' if const.signed else 'U') + 
+        'Int' + 
+        ('' if const.bitwidth == 0 else f'<{const.bitwidth}>') + 
+        f'({const.value})'
+    )
+
 def NameOf(item):
     if issubclass(type(item), Node):
         return NodeName(item)
     elif issubclass(type(item), Signal):
         return SignalName(item)
+    elif issubclass(type(item), Constant):
+        return ConstantName(item)
     else:
         return str(item)
 
@@ -95,6 +105,11 @@ def EmitIo(fw, module):
 
     fw.WriteLine('output io: {}'.format(SignalTypeToString(module.io)))
 
+def EmitInsts(fw, module):
+    for inst_name in module.insts:
+        inst = module.insts[inst_name]
+        fw.WriteLine(f'inst {inst.instance_name} of {inst.module_name}')
+
 def EmitNode(fw, node):
     str_args = ', '.join([NameOf(arg) for arg in node.args])
     fw.WriteLine(f'node {node.name} = {node.primop}({str_args})')
@@ -127,6 +142,7 @@ def EmitStmts(fw, context):
 def EmitModule(fw, module):
     with Context(fw, 'module', module.name):
         EmitIo(fw, module)
+        EmitInsts(fw, module)
         EmitStmts(fw, module)
 
 def EmitFirrtl(filename, circuit):

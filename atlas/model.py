@@ -1,12 +1,10 @@
-import re
-
 class Node():
     def __init__(self, _name, _primop, _args):
         self.name = _name
         self.primop = _primop
         self.args = _args
 
-class Literal():
+class Constant():
     def __init__(self, _value, _bitwidth=0, _signed=False):
         self.value = _value
         self.bitwidth = _bitwidth
@@ -75,6 +73,15 @@ class Assignment():
         self.lhs = _lhs
         self.rhs = _rhs
 
+class Instance():
+    def __init__(self, _io, _instance_name, _module_name):
+        self.io = _io
+        self.io.parent = self
+        self.instance_name = _instance_name
+        self.module_name = _module_name
+        self.name = _instance_name
+        self.parent = None
+
 class StatementGroup():
     def __init__(self):
         self.stmts = []
@@ -103,17 +110,14 @@ class Module(StatementGroup):
         StatementGroup.__init__(self)
         self.name = _name
         self.io = {}
-        self.signals = {}
-        self.nodes = {}
         self.insts = {}
-        self.stmts = []
         self.has_state = False
 
     def AddIo(self, signal):
         self.io[signal.name] = signal
 
-    def AddInst(self, inst):
-        self.insts[inst.name] = inst
+    def AddInstance(self, inst):
+        self.insts[inst.instance_name] = inst
 
 class Circuit(object):
     def __init__(self, _name):

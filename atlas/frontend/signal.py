@@ -10,6 +10,7 @@ __all__ = [
     'Flip',
     'Input',
     'Output',
+    'Const',
     'Io',
     'Wire',
     'Reg',
@@ -44,7 +45,7 @@ class Node(model.Node):
     def __sub__(self, other): return BinaryOp('sub', self, other)
     def __mul__(self, other): return BinaryOp('mul', self, other)
     def __div__(self, other): return BinaryOp('div', self, other)
-    def __or__(self, other): return BinaryOp('op', self, other)
+    def __or__(self, other): return BinaryOp('or', self, other)
     def __xor__(self, other): return BinaryOp('xor', self, other)
     def __and__(self, other): return BinaryOp('and', self, other)
     def __gt__(self, other): return BinaryOp('gt', self, other)
@@ -79,11 +80,14 @@ class Bits(model.Bits):
     def __getitem__(self, key):
         return BitsElement(self, key)
 
+    def __setitem__(self, key, value):
+        pass
+
     def __add__(self, other): return BinaryOp('add', self, other)
     def __sub__(self, other): return BinaryOp('sub', self, other)
     def __mul__(self, other): return BinaryOp('mul', self, other)
     def __div__(self, other): return BinaryOp('div', self, other)
-    def __or__(self, other): return BinaryOp('op', self, other)
+    def __or__(self, other): return BinaryOp('or', self, other)
     def __xor__(self, other): return BinaryOp('xor', self, other)
     def __and__(self, other): return BinaryOp('and', self, other)
     def __gt__(self, other): return BinaryOp('gt', self, other)
@@ -108,7 +112,7 @@ class BitsElement(model.BitsElement):
     def __sub__(self, other): return BinaryOp('sub', self, other)
     def __mul__(self, other): return BinaryOp('mul', self, other)
     def __div__(self, other): return BinaryOp('div', self, other)
-    def __or__(self, other): return BinaryOp('op', self, other)
+    def __or__(self, other): return BinaryOp('or', self, other)
     def __xor__(self, other): return BinaryOp('xor', self, other)
     def __and__(self, other): return BinaryOp('and', self, other)
     def __gt__(self, other): return BinaryOp('gt', self, other)
@@ -128,6 +132,9 @@ class Bundle(model.Bundle):
     def __ilshift__(self, other):
         self.Assign(other)
         return self
+
+def Const(value, bitwidth=0, signed=False):
+    return model.Constant(value, bitwidth, signed)
 
 def Signed(signal):
     signal.signed = True

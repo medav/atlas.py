@@ -1,5 +1,5 @@
 import sys
-sys.path.append('..')
+sys.path.append('.')
 
 import atlas.firrtl.emitter as emitter
 from atlas.frontend import *
@@ -27,7 +27,7 @@ def Gcd(data_width):
         a_reg <<= io.in_a
         b_reg <<= io.in_b
 
-    io.done <<= (b_reg == 0)
+    io.done <<= (b_reg == Const(0))
     io.out <<= a_reg
 
     NameSignals(locals())

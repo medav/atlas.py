@@ -1,3 +1,6 @@
+import sys
+sys.path.append('.')
+
 import atlas.firrtl.emitter as emitter
 from atlas.frontend import *
 
