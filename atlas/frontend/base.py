@@ -1,7 +1,15 @@
 from .. import model
 from contextlib import contextmanager
 
-__all__ = ['Module', 'Circuit', 'CurrentModule', 'CurrentContext', 'StartCondition', 'EndCondition']
+__all__ = [
+    'Module',
+    'Circuit',
+    'CurrentModule',
+    'CurrentContext',
+    'StartCondition',
+    'EndCondition',
+    'otherwise'
+]
 
 circuit = None
 modules = []
@@ -66,3 +74,16 @@ def EndCondition(condition):
     global context
     assert CurrentContext() == condition
     context.pop()
+
+class ElseCondition():
+    def __init__(self):
+        pass
+
+    def __enter__(self):
+        assert type(CurrentContext().stmts[-1]) is model.Condition
+        context.append(CurrentContext().stmts[-1].else_group)
+
+    def __exit__(self, *kwargs):
+        context.pop()
+
+otherwise = ElseCondition()

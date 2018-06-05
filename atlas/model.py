@@ -96,6 +96,7 @@ class Condition(StatementGroup):
     def __init__(self, _condition):
         StatementGroup.__init__(self)
         self.condition = _condition
+        self.else_group = StatementGroup()
 
 class Module(StatementGroup):
     def __init__(self, _name):

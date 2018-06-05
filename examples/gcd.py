@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 import atlas.firrtl.emitter as emitter
 from atlas.frontend import *
 
@@ -14,10 +17,11 @@ def Gcd(data_width):
     a_reg = Reg(Bits(data_width))
     b_reg = Reg(Bits(data_width))
 
-    b_reg <<= b_reg - a_reg
-
     with a_reg > b_reg:
         a_reg <<= a_reg - b_reg
+
+    with otherwise:
+        b_reg <<= b_reg - a_reg
 
     with io.start:
         a_reg <<= io.in_a

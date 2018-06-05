@@ -115,6 +115,10 @@ def EmitStmts(fw, context):
         if type(stmt) is Condition:
             with Context(fw, 'when', NameOf(stmt.condition)):
                 EmitStmts(fw, stmt)
+
+            if len(stmt.else_group.stmts) > 0:
+                with Context(fw, 'else', ''):
+                    EmitStmts(fw, stmt.else_group)
         else:
             for key in stmt_emit_map:
                 if issubclass(type(stmt), key):

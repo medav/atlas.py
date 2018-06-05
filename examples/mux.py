@@ -10,9 +10,10 @@ def Mux(n):
         'out': Output(Bits(n))
     })
 
-    io.out <<= io.a
     with io.sel:
         io.out <<= io.b
+    with otherwise:
+        io.out <<= io.a
 
 circuit = Circuit('mymux')
 with circuit:

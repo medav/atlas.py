@@ -13,8 +13,7 @@ __all__ = [
     'Io',
     'Wire',
     'Reg',
-    'NameSignals',
-    'Cat'
+    'NameSignals'
 ]
 
 def BinaryOp(op, a, b):
@@ -23,8 +22,9 @@ def BinaryOp(op, a, b):
     return n
 
 def ConvertLiterals(args):
-    for i in range(len(args)):
-        if type(args[i]) is int:
+    return args
+    # for i in range(len(args)):
+    #     if type(args[i]) is int:
             
 
 class Node(model.Node):
