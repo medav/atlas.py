@@ -18,8 +18,9 @@ def Mux(n):
     with otherwise:
         io.out <<= io.a
 
-circuit = Circuit('mymux')
+circuit = Circuit()
 with circuit:
-    Mux(8)
+    top = Mux(8)
 
+circuit.SetTop(top)
 emitter.EmitFirrtl('mux.fir', circuit)

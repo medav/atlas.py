@@ -10,18 +10,15 @@ def FullAdder(cin, a, b):
     cout = (a & b) | (a_xor_b & cin)
     return sum_out, cout
 
-def RippleAdderIo(n):
-    return {
+@Module
+def RippleAdder(n):
+    io = Io({
         'a': Input(Bits(n)),
         'b': Input(Bits(n)),
         'cin': Input(Bits(1)),
         'sum_out': Output(Bits(n)),
         'cout': Output(Bits(1))
-    }
-
-@Module
-def RippleAdder(n):
-    io = Io(RippleAdderIo(n))
+    })
 
     carry = io.cin
     out_arr = Wire(Bits(1, (n,)))
@@ -35,8 +32,9 @@ def RippleAdder(n):
 
     NameSignals(locals())
 
-circuit = Circuit('RippleAdder')
+circuit = Circuit()
 with circuit:
-    RippleAdder(2)
+    top = RippleAdder(2)
 
+circuit.SetTop(top)
 emitter.EmitFirrtl('ripple-adder.fir', circuit)

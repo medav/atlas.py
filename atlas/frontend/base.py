@@ -19,8 +19,12 @@ modules = []
 context = []
 
 class Circuit(model.Circuit):
-    def __init__(self, _name='circuit'):
-        model.Circuit.__init__(self, _name)
+    def __init__(self):
+        model.Circuit.__init__(self, 'top')
+
+    def SetTop(self, module):
+        assert module in self.modules
+        self.name = module.name
 
     def __enter__(self):
         global circuit
@@ -49,13 +53,8 @@ def Module(func):
         global context
         global circuit
 
-        print(f)
-
-        if len(name) > 0:
-            module_name = name
-        else:
-            uid = sha256(f'{args}, {kwargs}'.encode('utf-8')).hexdigest()[0:4]
-            module_name = func.__name__ + '_' + uid
+        uid = sha256(f'{args}, {kwargs}'.encode('utf-8')).hexdigest()[0:4]
+        module_name = func.__name__ + '_' + uid
 
         m = None
 

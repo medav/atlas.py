@@ -26,6 +26,7 @@ class Signal():
         self.sigtype = Signal.WIRE
         self.name = _name
         self.parent = None
+        self.reset = None
 
 class Bits(Signal):
     def __init__(self, _elemwidth, _shape=(1), _name='bits', _signed=False):

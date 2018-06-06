@@ -96,7 +96,10 @@ def EmitSignal(fw, signal):
     if signal.sigtype == Signal.WIRE:
         fw.WriteLine(f'{signal_type_str[signal.sigtype]} {signal.name}: {SignalTypeToString(signal)}')
     elif signal.sigtype == Signal.REG:
-        fw.WriteLine(f'{signal_type_str[signal.sigtype]} {signal.name}: {SignalTypeToString(signal)}, clock')
+        reset = ''
+        if signal.reset is not None:
+            reset = f'with : (reset => (reset, {NameOf(signal.reset)}))'
+        fw.WriteLine(f'{signal_type_str[signal.sigtype]} {signal.name}: {SignalTypeToString(signal)}, clock {reset}')
 
 def EmitIo(fw, module):
     if module.has_state:

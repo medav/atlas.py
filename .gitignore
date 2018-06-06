@@ -3,6 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+.vscode
+
+# Firrtl files
+*.fir
+
+# Verilog files
+*.v
+
 # C extensions
 *.so
 

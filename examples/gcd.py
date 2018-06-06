@@ -32,8 +32,9 @@ def Gcd(data_width):
 
     NameSignals(locals())
 
-circuit = Circuit('Gcd')
+circuit = Circuit()
 with circuit:
-    Gcd(64)
+    top = Gcd(64)
 
+circuit.SetTop(top)
 emitter.EmitFirrtl('gcd.fir', circuit)

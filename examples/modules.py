@@ -20,7 +20,7 @@ def FullAdder():
     
     NameSignals(locals())
 
-@Module('RippleAdder')
+@Module
 def RippleAdder(n):
     io = Io({
         'a': Input(Bits(n)),
@@ -48,8 +48,9 @@ def RippleAdder(n):
 
     NameSignals(locals())
 
-circuit = Circuit('RippleAdder')
+circuit = Circuit()
 with circuit:
-    RippleAdder(2)
+    top = RippleAdder(8)
 
+circuit.SetTop(top)
 emitter.EmitFirrtl('ripple-adder.fir', circuit)
