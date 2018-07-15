@@ -13,7 +13,9 @@ __all__ = [
     'Const',
     'Io',
     'Wire',
+    'WireInit',
     'Reg',
+    'RegInit',
     'NameSignals'
 ]
 
@@ -172,11 +174,21 @@ def Wire(signal):
     CurrentContext().AddSignal(signal)
     return signal
 
+def WireInit(signal, default):
+    wire = Wire(signal)
+    wire <<= default
+    return wire
+
 def Reg(signal):
     signal.sigtype = model.Signal.REG
     CurrentModule().has_state = True
     CurrentContext().AddSignal(signal)
     return signal
+
+def RegInit(signal, reset):
+    reg = Reg(signal)
+    reg.reset = reset
+    return reg
 
 def Assign(signal, child):
     CurrentContext().AddStmt(model.Assignment(child, signal))

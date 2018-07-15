@@ -17,11 +17,26 @@ def FiniteStateMachine():
 
     state.reset = states.init
 
-    with io.a:
-        state <<= states.a
+    with state == states.init:
+        with io.a:
+            state <<= states.a
 
-    with io.b:
-        state <<= states.b
+        with io.b:
+            state <<= states.b
+
+    with state == states.a:
+        with io.a:
+            state <<= states.init
+
+        with io.b:
+            state <<= states.b
+
+    with state == states.b:
+        with io.a:
+            state <<= states.a
+
+        with io.b:
+            state <<= states.init
 
     io.cout <<= state
 
