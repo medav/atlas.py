@@ -19,6 +19,11 @@ __all__ = [
     'NameSignals'
 ]
 
+def UnaryOp(op, a):
+    n = Node(op, [a])
+    CurrentContext().AddNode(n)
+    return n
+
 def BinaryOp(op, a, b):
     n = Node(op, [a, b])
     CurrentContext().AddNode(n)
@@ -56,6 +61,7 @@ class Node(model.Node):
     def __le__(self, other): return BinaryOp('le', self, other)
     def __eq__(self, other): return BinaryOp('eq', self, other)
     def __neq__(self, other): return BinaryOp('neq', self, other)
+    def __invert__(self): return UnaryOp('not', self)
 
 class Bits(model.Bits):
     def __init__(self, _elemwidth, _shape=(1,), _name='bits', _signed=False):
@@ -98,6 +104,7 @@ class Bits(model.Bits):
     def __le__(self, other): return BinaryOp('le', self, other)
     def __eq__(self, other): return BinaryOp('eq', self, other)
     def __neq__(self, other): return BinaryOp('neq', self, other)
+    def __invert__(self): return UnaryOp('not', self)
 
 class BitsElement(model.BitsElement):
     def __init__(self, _parent, _key):
@@ -123,6 +130,7 @@ class BitsElement(model.BitsElement):
     def __le__(self, other): return BinaryOp('le', self, other)
     def __eq__(self, other): return BinaryOp('eq', self, other)
     def __neq__(self, other): return BinaryOp('neq', self, other)
+    def __invert__(self): return UnaryOp('not', self)
 
 class Bundle(model.Bundle):
     def __init__(self, _dict, _name='bundle'):
