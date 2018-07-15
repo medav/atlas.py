@@ -8,8 +8,8 @@ __all__ = [
     'Log2Ceil',
     'Cat',
     'Enum',
-    'true',
-    'false'
+    'T',
+    'F'
 ]
 
 def Log2Floor(n):
@@ -43,5 +43,5 @@ class Enum():
             self.__dict__[id] = Const(i, self.bitwidth, False)
             i += 1
 
-true = model.Constant(1, 0, False)
-false = model.Constant(0, 0, False)
+T = model.Constant(1, 0, False)
+F = model.Constant(0, 0, False)
