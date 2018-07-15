@@ -39,6 +39,7 @@ class Bits(Signal):
 class BitsElement(Signal):
     def __init__(self, _parent, _key):
         Signal.__init__(self, f'[{str(_key)}]')
+        self.key = _key
         self.parent = _parent
 
 class Bundle(Signal):

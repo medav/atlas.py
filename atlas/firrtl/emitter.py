@@ -39,6 +39,9 @@ def SignalName(signal):
     name = signal.name
 
     if issubclass(type(signal), BitsElement):
+        if issubclass(type(signal.key), Signal):
+            name = f'[{NameOf(signal.key)}]'
+
         signal = signal.parent
         name = signal.name + name
 
