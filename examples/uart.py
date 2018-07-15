@@ -25,7 +25,7 @@ def UartReceiver(clock_rate, baud_rate, fifo_depth):
     fifo_ram = Reg(Bits(8, (fifo_depth,)))
     enq_addr = RegInit(Bits(Log2Ceil(fifo_depth)), Const(0))
     deq_addr = RegInit(Bits(Log2Ceil(fifo_depth)), Const(0))
-    enqueue = WireInit(Bits(1), false)
+    enqueue = WireInit(Bits(1), F)
 
 #     val data_reg = RegInit(Vec(Seq.fill(8)(false.B)))
 
@@ -48,7 +48,7 @@ def UartReceiver(clock_rate, baud_rate, fifo_depth):
 
     with state == states.idle:
         clock_counter <<= Const(0)
-        with io.uart_rx == false:
+        with ~io.uart_rx:
             state <<= states.start
 
     with state == states.start:
@@ -80,7 +80,7 @@ def UartReceiver(clock_rate, baud_rate, fifo_depth):
     with state == states.stop:
         with clock_counter == Const(clocks_per_bit):
             state <<= states.idle
-            enqueue <<= true
+            enqueue <<= T
 
     NameSignals(locals())
 
