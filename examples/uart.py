@@ -27,7 +27,8 @@ def UartReceiver(clock_rate, baud_rate, fifo_depth):
     deq_addr = RegInit(Bits(Log2Ceil(fifo_depth)), Const(0))
     enqueue = WireInit(Bits(1), F)
 
-#     val data_reg = RegInit(Vec(Seq.fill(8)(false.B)))
+    data_reg = Reg(Bits(1, (8,)))
+    # TODO: Add mechanism to allow initial values that are array types
 
     clock_counter = RegInit(Bits(32), Const(0))
     bit_counter = RegInit(Bits(4), Const(0))
@@ -60,13 +61,12 @@ def UartReceiver(clock_rate, baud_rate, fifo_depth):
             clock_counter <<= Const(0)
             bit_counter <<= Const(0)
 
-#                 for (i <- 0 until 8) {
-#                     data_reg(i) := false.B
-#                 }
+            for i in range(8):
+                data_reg[i] <<= F
 
     with state == states.read:
-        # with clock_counter == clocks_per_half_bit:
-#                 data_reg(bit_counter) := io.uart_rx
+        with clock_counter == clocks_per_half_bit:
+            data_reg[bit_counter] <<= io.uart_rx
 
         with clock_counter == clocks_per_bit:
             with bit_counter == Const(7):
