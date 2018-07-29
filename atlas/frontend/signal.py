@@ -1,207 +1,141 @@
 from .. import model
 from .base import *
+from .typespec import *
+from .primops import *
 
 __all__ = [
-    'Node',
-    'Bits',
-    'Bundle',
-    'Signed',
-    'Unsigned',
-    'Flip',
+    'BitsSignal',
+    'ListSignal',
+    'BundleSignal',
     'Input',
     'Output',
-    'Const',
-    'Io',
-    'Wire',
-    'WireInit',
-    'Reg',
-    'RegInit',
-    'NameSignals'
+    'Io'
 ]
 
-def UnaryOp(op, a):
-    n = Node(op, [a])
-    CurrentContext().AddNode(n)
-    return n
+class BitsSignal(model.BitsSignal):
+    def __init__(self, typespec, name=None, parent=None, sigstate=model.SignalTypes.WIRE):
+        if not IsBits(typespec):
+            raise TypeError('Typespec is not Bits')
 
-def BinaryOp(op, a, b):
-    n = Node(op, [a, b])
-    CurrentContext().AddNode(n)
-    return n
-
-def ConvertLiterals(args):
-    return args
-    # for i in range(len(args)):
-    #     if type(args[i]) is int:
-            
-
-class Node(model.Node):
-    uid = 0
-
-    def __init__(self, _primop, _args):
-        model.Node.__init__(self, f'node_{Node.uid}', _primop, ConvertLiterals(_args))
-        Node.uid += 1
-
-    def __enter__(self):
-        self.condition = StartCondition(self)
-
-    def __exit__(self, *kwargs):
-        EndCondition(self.condition)
-
-    def __add__(self, other): return BinaryOp('add', self, other)
-    def __sub__(self, other): return BinaryOp('sub', self, other)
-    def __mul__(self, other): return BinaryOp('mul', self, other)
-    def __div__(self, other): return BinaryOp('div', self, other)
-    def __or__(self, other): return BinaryOp('or', self, other)
-    def __xor__(self, other): return BinaryOp('xor', self, other)
-    def __and__(self, other): return BinaryOp('and', self, other)
-    def __gt__(self, other): return BinaryOp('gt', self, other)
-    def __lt__(self, other): return BinaryOp('lt', self, other)
-    def __ge__(self, other): return BinaryOp('ge', self, other)
-    def __le__(self, other): return BinaryOp('le', self, other)
-    def __eq__(self, other): return BinaryOp('eq', self, other)
-    def __neq__(self, other): return BinaryOp('neq', self, other)
-    def __invert__(self): return UnaryOp('not', self)
-
-class Bits(model.Bits):
-    def __init__(self, _elemwidth, _shape=(1,), _name='bits', _signed=False):
-        model.Bits.__init__(self, _elemwidth, _shape, _name, _signed)
+        super().__init__(
+            name=name,
+            typespec=typespec,
+            parent=parent,
+            sigstate=sigstate,
+            width=typespec['width'],
+            signed=typespec['signed'],
+            flipped=typespec['flipped'])
 
     def Assign(self, other):
-        CurrentContext().AddStmt(model.Assignment(self, other))
+        self.connections.append(model.Connection(CurrentPredicate(), other))
 
     def __ilshift__(self, other):
         self.Assign(other)
         return self
 
     def __enter__(self):
-        self.condition = StartCondition(self)
+        if self.width != 1:
+            raise RuntimeError("Conditions must have bitwidth == 1")
+        StartCondition(self)
 
     def __exit__(self, *kwargs):
-        EndCondition(self.condition)
+        EndCondition(self)
 
-    def __call__(self, high, low):
-        n = Node('bits', [self, high, low])
-        CurrentContext().AddNode(n)
-        return n
+    def __add__(self, other): return Add(self, other)
+    def __sub__(self, other): return Sub(self, other)
+    def __mul__(self, other): return Mul(self, other)
+    def __div__(self, other): return Div(self, other)
+    def __or__(self, other): return Or(self, other)
+    def __xor__(self, other): return Xor(self, other)
+    def __and__(self, other): return And(self, other)
+    def __gt__(self, other): return Gt(self, other)
+    def __lt__(self, other): return Lt(self, other)
+    def __ge__(self, other): return Ge(self, other)
+    def __le__(self, other): return Le(self, other)
+    def __eq__(self, other): return Eq(self, other)
+    def __neq__(self, other): return Neq(self, other)
+    def __invert__(self): return Not(self)
+
+class ListSignal(model.ListSignal):
+    def __init__(self, typespec, name=None, parent=None, sigstate=model.SignalTypes.WIRE):
+        if type(typespec) is not list:
+            raise TypeError('Typespec is not List')
+
+        fields = list([Signal(typespec[i], f'i{i}', self) for i in range(len(typespec))])
+
+        super().__init__(
+            name=name,
+            typespec=typespec,
+            parent=parent,
+            sigstate=sigstate,
+            fields=fields)
 
     def __getitem__(self, key):
-        return BitsElement(self, key)
+        return self.fields[key]
 
-    def __setitem__(self, key, value):
-        pass
-
-    def __add__(self, other): return BinaryOp('add', self, other)
-    def __sub__(self, other): return BinaryOp('sub', self, other)
-    def __mul__(self, other): return BinaryOp('mul', self, other)
-    def __div__(self, other): return BinaryOp('div', self, other)
-    def __or__(self, other): return BinaryOp('or', self, other)
-    def __xor__(self, other): return BinaryOp('xor', self, other)
-    def __and__(self, other): return BinaryOp('and', self, other)
-    def __gt__(self, other): return BinaryOp('gt', self, other)
-    def __lt__(self, other): return BinaryOp('lt', self, other)
-    def __ge__(self, other): return BinaryOp('ge', self, other)
-    def __le__(self, other): return BinaryOp('le', self, other)
-    def __eq__(self, other): return BinaryOp('eq', self, other)
-    def __neq__(self, other): return BinaryOp('neq', self, other)
-    def __invert__(self): return UnaryOp('not', self)
-
-class BitsElement(model.BitsElement):
-    def __init__(self, _parent, _key):
-        model.BitsElement.__init__(self, _parent, _key)
-
-    def Assign(self, other):
-        CurrentContext().AddStmt(model.Assignment(self, other))
-
-    def __ilshift__(self, other):
-        self.Assign(other)
-        return self
-
-    def __add__(self, other): return BinaryOp('add', self, other)
-    def __sub__(self, other): return BinaryOp('sub', self, other)
-    def __mul__(self, other): return BinaryOp('mul', self, other)
-    def __div__(self, other): return BinaryOp('div', self, other)
-    def __or__(self, other): return BinaryOp('or', self, other)
-    def __xor__(self, other): return BinaryOp('xor', self, other)
-    def __and__(self, other): return BinaryOp('and', self, other)
-    def __gt__(self, other): return BinaryOp('gt', self, other)
-    def __lt__(self, other): return BinaryOp('lt', self, other)
-    def __ge__(self, other): return BinaryOp('ge', self, other)
-    def __le__(self, other): return BinaryOp('le', self, other)
-    def __eq__(self, other): return BinaryOp('eq', self, other)
-    def __neq__(self, other): return BinaryOp('neq', self, other)
-    def __invert__(self): return UnaryOp('not', self)
-
-class Bundle(model.Bundle):
+class BundleSignal(model.BundleSignal):
     def __init__(self, _dict, _name='bundle'):
-        model.Bundle.__init__(self, _dict, _name=_name)
+        if type(typespec) is not dict:
+            raise TypeError('Typespec is not Bundle')
+
+        fields = { field:Signal(typespec[field], field, self) for field in typespec }
+
+        super().__init__(
+            name=name,
+            typespec=typespec,
+            parent=parent,
+            sigstate=sigstate,
+            fields=fields)
 
     def Assign(self, other):
-        CurrentContext().AddStmt(model.Assignment(self, other))
+        assert False
+
+    def __getattr__(self, key):
+        return self.fields[key]
 
     def __ilshift__(self, other):
         self.Assign(other)
         return self
 
-def Const(value, bitwidth=0, signed=False):
-    return model.Constant(value, bitwidth, signed)
+def Signal(typespec, name=None):
+    if IsBits(typespec):
+        return BitsSignal(typespec, name)
+    elif type(typespec) is list:
+        return ListSignal(typespec, name)
+    elif type(typespec) is dict:
+        return BundleSignal(typespec, name)
+    else:
+        assert False
 
-def Signed(signal):
-    signal.signed = True
+def Input(typespec):
+    signal = Signal(typespec)
+    signal.sigdir = model.SignalTypes.OUTPUT
     return signal
 
-def Unsigned(signal):
-    signal.signed = False
+def Output(typespec):
+    signal = Signal(typespec)
+    signal.sigdir = model.SignalTypes.INPUT
     return signal
 
-def Flip(signal):
-    signal.sigdir = model.Signal.FLIP
-    return signal
+class IoBundle(model.IoBundle):
+    def __init__(self, io_dict):
+        super().__init__(io_dict=io_dict)
 
-def Input(signal):
-    signal.sigdir = model.Signal.INPUT
-    return signal
+        for key in self.io_dict:
+            signal = io_dict[key]
+            signal.parent = self
+            signal.name = key
 
-def Output(signal):
-    signal.sigdir = model.Signal.OUTPUT
-    return signal
+    def __getattr__(self, key):
+        return self.io_dict[key]
 
-def Io(_dict):
-    io = Bundle(_dict, _name='io')
-
-    for s in io:
-        if s.sigdir == model.Signal.INPUT:
-            Flip(s)
-
-    CurrentModule().io = io
+def Io(io_dict):
+    io = IoBundle(io_dict)
     io.parent = CurrentModule()
+    CurrentModule().io = io
     return io
 
-def Wire(signal):
-    signal.sigtype = model.Signal.WIRE
-    CurrentContext().AddSignal(signal)
-    return signal
-
-def WireInit(signal, default):
-    wire = Wire(signal)
-    wire <<= default
-    return wire
-
-def Reg(signal):
-    signal.sigtype = model.Signal.REG
-    CurrentModule().has_state = True
-    CurrentContext().AddSignal(signal)
-    return signal
-
-def RegInit(signal, reset):
-    reg = Reg(signal)
-    reg.reset = reset
-    return reg
-
-def Assign(signal, child):
-    CurrentContext().AddStmt(model.Assignment(child, signal))
-
-def NameSignals(locals):
-    for local in locals:
-        if issubclass(type(locals[local]), model.Signal):
-            locals[local].name = local
+# def NameSignals(locals):
+#     for local in locals:
+#         if issubclass(type(locals[local]), model.Signal):
+#             locals[local].name = local

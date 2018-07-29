@@ -1,7 +1,6 @@
 import sys
 sys.path.append('.')
 
-import atlas.firrtl.emitter as emitter
 from atlas.frontend import *
 
 @Module
@@ -15,7 +14,7 @@ def Mux(n):
 
     with io.sel:
         io.out <<= io.b
-    with otherwise:
+    with Otherwise():
         io.out <<= io.a
 
 circuit = Circuit()
@@ -23,4 +22,3 @@ with circuit:
     top = Mux(8)
 
 circuit.SetTop(top)
-emitter.EmitFirrtl('mux.fir', circuit)

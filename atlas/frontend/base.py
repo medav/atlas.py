@@ -2,21 +2,24 @@ from .. import model
 from contextlib import contextmanager
 import copy
 from hashlib import sha256
+from .. import op
 
 __all__ = [
     'Module',
     'Circuit',
     'CurrentModule',
-    'CurrentContext',
+    'CurrentPredicate',
+    'PreviousCondition',
     'StartCondition',
     'EndCondition',
     'Instance',
-    'otherwise'
+    'RegisterOp'
 ]
 
 circuit = None
 modules = []
-context = []
+predicate = None
+prevcondition = None
 
 class Circuit(model.Circuit):
     def __init__(self):
@@ -24,7 +27,7 @@ class Circuit(model.Circuit):
 
     def SetTop(self, module):
         assert module in self.modules
-        self.name = module.name
+        self.top = module
 
     def __enter__(self):
         global circuit
@@ -42,19 +45,25 @@ def CurrentModule():
     assert len(modules) > 0
     return modules[-1]
 
-def CurrentContext():
-    global context
-    assert len(context) > 0
-    return context[-1]
+def CurrentPredicate():
+    global predicate
+    return predicate
+
+def PreviousCondition():
+    global prevcondition
+    return prevcondition
 
 def Module(func):
     def ModuleWrapper(*args, **kwargs):
         global modules
-        global context
+        global predicate
         global circuit
 
-        uid = sha256(f'{args}, {kwargs}'.encode('utf-8')).hexdigest()[0:4]
-        module_name = func.__name__ + '_' + uid
+        module_name = func.__name__
+
+        if (args != ()) or (kwargs != {}):
+            uid = sha256(f'{args}, {kwargs}'.encode('utf-8')).hexdigest()[0:4]
+            module_name = func.__name__ + '_' + uid
 
         m = None
 
@@ -64,15 +73,17 @@ def Module(func):
 
         if m is None:
             modules.append(model.Module(module_name))
-            context.append(CurrentModule())
+            assert predicate is None
+            predicate = []
+            prevcondition = None
 
             func(*args, **kwargs)
 
             assert len(modules) > 0
             m = modules.pop()
-            context.pop()
+            predicate = None
 
-            circuit.AddModule(m)
+            circuit.modules.append(m)
 
         return m
 
@@ -86,11 +97,11 @@ def NewInstanceName(module_name):
     if module_name in instance_id_table:
         instance_id_table[module_name] += 1
         id = instance_id_table[module_name]
-        return f'{module_name}_inst_{id}'
-
     else:
         instance_id_table[module_name] = 0
-        return f'{module_name}_inst_0'
+        id = 0
+
+    return f'{module_name}_inst_{id}'
 
 def Instance(module):
     assert len(modules) > 0
@@ -99,33 +110,18 @@ def Instance(module):
     CurrentModule().AddInstance(inst)
     return inst
 
-def ContainsSignal(signal):
-    while signal.parent is not None and type(signal.parent) is not model.Module:
-        signal = signal.parent
-
-    return signal.parent == CurrentModule()
-
 def StartCondition(signal):
-    global context
-    condition = model.Condition(signal)
-    CurrentContext().AddStmt(condition)
-    context.append(condition)
-    return condition
+    global predicate
+    assert predicate is not None
+    predicate.append(signal)
 
-def EndCondition(condition):
-    global context
-    assert CurrentContext() == condition
-    context.pop()
+def EndCondition(signal):
+    global predicate
+    global prevcondition
+    assert predicate is not None
+    assert predicate[-1] is signal
+    prevcondition = predicate[-1]
+    predicate.pop()
 
-class ElseCondition():
-    def __init__(self):
-        pass
-
-    def __enter__(self):
-        assert type(CurrentContext().stmts[-1]) is model.Condition
-        context.append(CurrentContext().stmts[-1].else_group)
-
-    def __exit__(self, *kwargs):
-        context.pop()
-
-otherwise = ElseCondition()
+def RegisterOp(aop):
+    return aop

@@ -1,130 +1,66 @@
-class Node():
-    def __init__(self, _name, _primop, _args):
-        self.name = _name
-        self.primop = _primop
-        self.args = _args
+from dataclasses import dataclass, field, MISSING
 
-class Constant():
-    def __init__(self, _value, _bitwidth=0, _signed=False):
-        self.value = _value
-        self.bitwidth = _bitwidth
-        self.signed = _signed
+class SignalTypes(object):
+    # Types
+    BITS = 0
+    LIST = 1
+    BUNDLE = 2
 
-class Signal():
-
-    # Signal directions
-    INPUT = 0
-    OUTPUT = 1
-    FLIP = 2
-
-    # Signal types
-    WIRE = 0
+    # State
+    WIRE =  0
     REG = 1
 
-    def __init__(self, _name):
-        self.sigdir = Signal.INPUT
-        self.sigtype = Signal.WIRE
-        self.name = _name
-        self.parent = None
-        self.reset = None
+    # Direction
+    INOUT = 0
+    INPUT = 1
+    OUTPUT = 2
 
-class Bits(Signal):
-    def __init__(self, _elemwidth, _shape=(1), _name='bits', _signed=False):
-        Signal.__init__(self, _name)
-        self.elemwidth = _elemwidth
-        self.shape = _shape
-        self.signed = _signed
-        self.parent = None
+@dataclass
+class SignalBase(object):
+    name : str = field(default=MISSING)
+    typespec : any = field(default=MISSING, repr=False)
+    parent : any = field(default=MISSING, repr=False)
+    sigtype : int = field(default=MISSING)
+    sigstate : int = field(default=SignalTypes.WIRE)
+    sigdir : int = field(default=SignalTypes.INOUT)
+    connections : list = field(default_factory=lambda: [], repr=False)
 
-class BitsElement(Signal):
-    def __init__(self, _parent, _key):
-        Signal.__init__(self, f'[{str(_key)}]')
-        self.key = _key
-        self.parent = _parent
+@dataclass
+class BitsSignal(SignalBase):
+    sigtype : int = SignalTypes.BITS
+    width : int = field(default=1)
+    signed : bool = field(default=False)
+    flipped : bool = field(default=False)
 
-class Bundle(Signal):
-    def __init__(self, _dict, _name='bundle'):
-        Signal.__init__(self, _name)
-        self.signal_names = []
+@dataclass
+class ListSignal(SignalBase):
+    sigtype : int = SignalTypes.LIST
+    fields : list = field(default_factory=lambda: [], compare=False, repr=False)
 
-        for name in _dict:
-            self.signal_names.append(name)
-            _dict[name].name = name
-            _dict[name].parent = self
+@dataclass
+class BundleSignal(SignalBase):
+    sigtype : int = SignalTypes.BUNDLE
+    fields : dict = field(default_factory=lambda: {}, compare=False, repr=False)
 
-        self.__dict__.update(_dict)
+@dataclass
+class IoBundle(object):
+    io_dict : dict = field()
 
-    def __iter__(self):
-        self.index = 0
-        return self
+@dataclass
+class Connection(object):
+    predicate : list
+    rhs : SignalBase
 
-    def __next__(self):
-        if self.index >= len(self.signal_names):
-            raise StopIteration
+@dataclass
+class Module(object):
+    name : str
+    io : dict = field(default=None, compare=False)
+    instances : dict = field(default_factory=lambda: {}, compare=False, repr=False)
+    signals : dict = field(default_factory=lambda: {}, compare=False, repr=False)
+    ops : list = field(default_factory=lambda: [], compare=False, repr=False)
 
-        signal = self.__dict__[self.signal_names[self.index]]
-        self.index += 1
-
-        return signal
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
-
-class Assignment():
-    def __init__(self, _lhs, _rhs):
-        self.lhs = _lhs
-        self.rhs = _rhs
-
-class Instance():
-    def __init__(self, _io, _instance_name, _module_name):
-        self.io = _io
-        self.io.parent = self
-        self.instance_name = _instance_name
-        self.module_name = _module_name
-        self.name = _instance_name
-        self.parent = None
-
-class StatementGroup():
-    def __init__(self):
-        self.stmts = []
-        self.signals = {}
-        self.nodes = {}
-
-    def AddSignal(self, signal):
-        self.signals[signal.name] = signal
-        self.AddStmt(signal)
-
-    def AddNode(self, node):
-        self.nodes[node.name] = node
-        self.AddStmt(node)
-
-    def AddStmt(self, stmt):
-        self.stmts.append(stmt)
-
-class Condition(StatementGroup):
-    def __init__(self, _condition):
-        StatementGroup.__init__(self)
-        self.condition = _condition
-        self.else_group = StatementGroup()
-
-class Module(StatementGroup):
-    def __init__(self, _name):
-        StatementGroup.__init__(self)
-        self.name = _name
-        self.io = {}
-        self.insts = {}
-        self.has_state = False
-
-    def AddIo(self, signal):
-        self.io[signal.name] = signal
-
-    def AddInstance(self, inst):
-        self.insts[inst.instance_name] = inst
-
+@dataclass
 class Circuit(object):
-    def __init__(self, _name):
-        self.name = _name
-        self.modules = []
-
-    def AddModule(self, module):
-        self.modules.append(module)
+    name : str
+    top : Module = field(default=None, compare=False, repr=False)
+    modules : list = field(default_factory=lambda: [], compare=False, repr=False)
