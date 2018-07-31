@@ -124,4 +124,5 @@ def EndCondition(signal):
     predicate.pop()
 
 def RegisterOp(aop):
+    CurrentModule().ops.append(aop)
     return aop
