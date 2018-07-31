@@ -10,7 +10,7 @@ __all__ = [
     'Log2Ceil',
     'Cat',
     'Enum',
-    'Otherwise'
+    'otherwise'
 ]
 
 def Log2Floor(n):
@@ -44,7 +44,15 @@ class Enum():
             self.__dict__[id] = Const(i, self.bitwidth, False)
             i += 1
 
-@contextmanager
-def Otherwise():
-    with ~PreviousCondition():
-        yield
+class OtherwiseObject(object):
+    def __init__():
+        pass
+
+    def __enter__():
+        self.signal = PreviousCondition()
+        StartCondition(~self.signal)
+
+    def __exit__(**kwargs):
+        EndCondition(self.signal)
+
+otherwise = OtherwiseObject()
