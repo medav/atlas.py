@@ -1,16 +1,16 @@
-from .. import model
+import math
+from contextlib import contextmanager
+
+from . import model
 from .primops import *
 from .base import *
 from .signal import *
-import math
-from contextlib import contextmanager
 
 __all__ = [
     'Log2Floor',
     'Log2Ceil',
     'Cat',
-    'Enum',
-    'otherwise'
+    'Enum'
 ]
 
 def Log2Floor(n):
@@ -43,16 +43,3 @@ class Enum():
         for id in _ids:
             self.__dict__[id] = Const(i, self.bitwidth, False)
             i += 1
-
-class OtherwiseObject(object):
-    def __init__():
-        pass
-
-    def __enter__():
-        self.signal = PreviousCondition()
-        StartCondition(~self.signal)
-
-    def __exit__(**kwargs):
-        EndCondition(self.signal)
-
-otherwise = OtherwiseObject()

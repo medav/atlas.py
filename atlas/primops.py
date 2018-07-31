@@ -1,8 +1,9 @@
-from .. import model
-from .. import op
-from .. import verilog
+from . import model
+from . import op
+from .verilog import *
 from .base import *
 from .typespec import *
+from .signal import *
 
 class BinaryOperator(op.AtlasOperator):
     def __init__(self, sig_a, sig_b, opname, verilog_op):
@@ -10,7 +11,7 @@ class BinaryOperator(op.AtlasOperator):
         assert issubclass(type(sig_b), model.BitsSignal)
         assert sig_a.width == sig_b.width
 
-        super().__init__(Bits(sig_a.width, False), opname)
+        super().__init__(Wire(Bits(sig_a.width, False)), opname)
 
         self.sig_a = sig_a
         self.sig_b = sig_b
@@ -54,7 +55,7 @@ class RShfOperator(BinaryOperator):
 class NotOperator(op.AtlasOperator):
     def __init__(self, sig_a):
         assert issubclass(type(sig_a), model.BitsSignal)
-        super().__init__(Bits(sig_a.width, False), 'not')
+        super().__init__(Wire(Bits(sig_a.width, False)), 'not')
         self.sig_a = sig_a
 
     def Synthesize(self):

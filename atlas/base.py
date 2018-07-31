@@ -1,8 +1,9 @@
-from .. import model
 from contextlib import contextmanager
 import copy
 from hashlib import sha256
-from .. import op
+
+from . import model
+from . import op
 
 __all__ = [
     'Module',
@@ -13,7 +14,8 @@ __all__ = [
     'StartCondition',
     'EndCondition',
     'Instance',
-    'RegisterOp'
+    'RegisterOp',
+    'otherwise'
 ]
 
 circuit = None
@@ -47,7 +49,7 @@ def CurrentModule():
 
 def CurrentPredicate():
     global predicate
-    return predicate
+    return predicate.copy()
 
 def PreviousCondition():
     global prevcondition
@@ -110,18 +112,31 @@ def Instance(module):
     CurrentModule().AddInstance(inst)
     return inst
 
-def StartCondition(signal):
+def StartCondition(signal, path=True):
     global predicate
     assert predicate is not None
-    predicate.append(signal)
+    predicate.append((signal, path))
 
 def EndCondition(signal):
     global predicate
     global prevcondition
     assert predicate is not None
-    assert predicate[-1] is signal
-    prevcondition = predicate[-1]
+    assert predicate[-1][0] is signal
+    prevcondition = predicate[-1][0]
     predicate.pop()
+
+class OtherwiseObject(object):
+    def __init__(self):
+        pass
+
+    def __enter__(self):
+        self.signal = PreviousCondition()
+        StartCondition(self.signal, False)
+
+    def __exit__(self, *args):
+        EndCondition(self.signal)
+
+otherwise = OtherwiseObject()
 
 def RegisterOp(aop):
     CurrentModule().ops.append(aop)

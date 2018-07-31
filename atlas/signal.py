@@ -1,7 +1,6 @@
-from .. import model
+from . import model
 from .base import *
 from .typespec import *
-from .primops import *
 
 __all__ = [
     'BitsSignal',
@@ -9,7 +8,9 @@ __all__ = [
     'BundleSignal',
     'Input',
     'Output',
-    'Io'
+    'Io',
+    'Wire',
+    'Reg'
 ]
 
 class BitsSignal(model.BitsSignal):
@@ -74,7 +75,7 @@ class ListSignal(model.ListSignal):
         return self.fields[key]
 
 class BundleSignal(model.BundleSignal):
-    def __init__(self, _dict, _name='bundle'):
+    def __init__(self, typespec, name=None, parent=None, sigstate=model.SignalTypes.WIRE):
         if type(typespec) is not dict:
             raise TypeError('Typespec is not Bundle')
 
@@ -97,13 +98,13 @@ class BundleSignal(model.BundleSignal):
         self.Assign(other)
         return self
 
-def Signal(typespec, name=None):
+def Signal(typespec, name=None, parent=None):
     if IsBits(typespec):
-        return BitsSignal(typespec, name)
+        return BitsSignal(typespec, name, parent)
     elif type(typespec) is list:
-        return ListSignal(typespec, name)
+        return ListSignal(typespec, name, parent)
     elif type(typespec) is dict:
-        return BundleSignal(typespec, name)
+        return BundleSignal(typespec, name, parent)
     else:
         assert False
 
@@ -115,6 +116,11 @@ def Input(typespec):
 def Output(typespec):
     signal = Signal(typespec)
     signal.sigdir = model.SignalTypes.INPUT
+    return signal
+
+def Inout(typespec):
+    signal = Signal(typespec)
+    signal.sigdir = model.SignalTypes.INOUT
     return signal
 
 class IoBundle(model.IoBundle):
@@ -134,6 +140,17 @@ def Io(io_dict):
     io.parent = CurrentModule()
     CurrentModule().io = io
     return io
+
+def Wire(typespec):
+    signal = Signal(typespec)
+    signal.sigstate = SignalTypes.WIRE
+    return signal
+
+def Reg(typespec):
+    signal = Signal(typespec)
+    signal.sigstate = SignalTypes.REG
+    return signal
+
 
 # def NameSignals(locals):
 #     for local in locals:

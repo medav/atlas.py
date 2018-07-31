@@ -20,17 +20,17 @@ class SignalBase(object):
     name : str = field(default=MISSING)
     typespec : any = field(default=MISSING, repr=False)
     parent : any = field(default=MISSING, repr=False)
-    sigtype : int = field(default=MISSING)
-    sigstate : int = field(default=SignalTypes.WIRE)
-    sigdir : int = field(default=SignalTypes.INOUT)
+    sigtype : int = field(default=MISSING, repr=False)
+    sigstate : int = field(default=SignalTypes.WIRE, repr=False)
+    sigdir : int = field(default=SignalTypes.INOUT, repr=False)
     connections : list = field(default_factory=lambda: [], repr=False)
 
 @dataclass
 class BitsSignal(SignalBase):
     sigtype : int = SignalTypes.BITS
     width : int = field(default=1)
-    signed : bool = field(default=False)
-    flipped : bool = field(default=False)
+    signed : bool = field(default=False, repr=False)
+    flipped : bool = field(default=False, repr=False)
 
 @dataclass
 class ListSignal(SignalBase):
@@ -44,7 +44,8 @@ class BundleSignal(SignalBase):
 
 @dataclass
 class IoBundle(object):
-    io_dict : dict = field()
+    io_dict : dict
+    name : str = 'io'
 
 @dataclass
 class Connection(object):
