@@ -1,5 +1,6 @@
 from .. import model
 from .. import op
+from .. import verilog
 from .base import *
 from .typespec import *
 
