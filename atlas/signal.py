@@ -8,9 +8,11 @@ __all__ = [
     'BundleSignal',
     'Input',
     'Output',
+    'Flip',
     'Io',
     'Wire',
-    'Reg'
+    'Reg',
+    'NameSignals'
 ]
 
 class BitsSignal(model.BitsSignal):
@@ -110,18 +112,22 @@ def Signal(typespec, name=None, parent=None):
 
 def Input(typespec):
     signal = Signal(typespec)
-    signal.sigdir = model.SignalTypes.OUTPUT
+    signal.sigdir = model.SignalTypes.INPUT
     return signal
 
 def Output(typespec):
     signal = Signal(typespec)
-    signal.sigdir = model.SignalTypes.INPUT
+    signal.sigdir = model.SignalTypes.OUTPUT
     return signal
 
 def Inout(typespec):
     signal = Signal(typespec)
     signal.sigdir = model.SignalTypes.INOUT
     return signal
+
+def Flip(typespec):
+    typespec['flipped'] = True
+    return typespec
 
 class IoBundle(model.IoBundle):
     def __init__(self, io_dict):
@@ -143,16 +149,17 @@ def Io(io_dict):
 
 def Wire(typespec):
     signal = Signal(typespec)
-    signal.sigstate = SignalTypes.WIRE
+    signal.sigstate = model.SignalTypes.WIRE
+    CurrentModule().signals.append(signal)
     return signal
 
 def Reg(typespec):
     signal = Signal(typespec)
-    signal.sigstate = SignalTypes.REG
+    signal.sigstate = model.SignalTypes.REG
+    CurrentModule().signals.append(signal)
     return signal
 
-
-# def NameSignals(locals):
-#     for local in locals:
-#         if issubclass(type(locals[local]), model.Signal):
-#             locals[local].name = local
+def NameSignals(locals):
+    for local in locals:
+        if issubclass(type(locals[local]), model.SignalBase):
+            locals[local].name = local

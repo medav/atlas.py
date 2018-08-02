@@ -23,7 +23,6 @@ class SignalBase(object):
     sigtype : int = field(default=MISSING, repr=False)
     sigstate : int = field(default=SignalTypes.WIRE, repr=False)
     sigdir : int = field(default=SignalTypes.INOUT, repr=False)
-    connections : list = field(default_factory=lambda: [], repr=False)
 
 @dataclass
 class BitsSignal(SignalBase):
@@ -31,6 +30,7 @@ class BitsSignal(SignalBase):
     width : int = field(default=1)
     signed : bool = field(default=False, repr=False)
     flipped : bool = field(default=False, repr=False)
+    connections : list = field(default_factory=lambda: [], repr=False)
 
 @dataclass
 class ListSignal(SignalBase):
@@ -57,7 +57,7 @@ class Module(object):
     name : str
     io : dict = field(default=None, compare=False)
     instances : dict = field(default_factory=lambda: {}, compare=False, repr=False)
-    signals : dict = field(default_factory=lambda: {}, compare=False, repr=False)
+    signals : list = field(default_factory=lambda: [], compare=False, repr=False)
     ops : list = field(default_factory=lambda: [], compare=False, repr=False)
 
 @dataclass

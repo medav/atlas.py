@@ -5,12 +5,30 @@ from .model import *
 __all__ = [
     'VEmitRaw',
     'VName',
+    'ForEachBits',
     'VModule',
-    'VAssign'
+    'VDecl',
+    'VAlways',
+    'VAssign',
+    'VConnect',
+    'VIf',
+    'VElse'
 ]
 
-def VEmitRaw(f, line):
-    print(line)
+indent = 0
+
+def Indent():
+    global indent
+    indent += 1
+
+def Dedent():
+    global indent
+    assert indent > 0
+    indent -= 1
+
+def VEmitRaw(line):
+    global indent
+    print('    ' * indent + line)
     # f.write(f'{line}\n')
 
 def VName(signal : SignalBase):
@@ -26,6 +44,9 @@ def VName(signal : SignalBase):
     while issubclass(type(signal), SignalBase):
         signal = signal.parent
 
+        if signal is None:
+            break
+
         if signal.name is None:
             raise NameError('Signal must have a name')
 
@@ -39,6 +60,11 @@ dirstr_map = {
     SignalTypes.INOUT: 'inout',
 }
 
+statestr_map = {
+    SignalTypes.WIRE: 'wire',
+    SignalTypes.REG: 'reg'
+}
+
 flip_map = {
     SignalTypes.INPUT: SignalTypes.OUTPUT,
     SignalTypes.OUTPUT: SignalTypes.INPUT,
@@ -48,20 +74,23 @@ flip_map = {
 def ForEachBits(signal):
     if signal.sigtype == SignalTypes.BITS:
         yield signal
+
     elif signal.sigtype == SignalTypes.LIST:
         for subsig in signal.fields:
             for bits in ForEachBits(subsig):
                 yield bits
+
     elif signal.sigtype == SignalTypes.BUNDLE:
         for subsig in signal.fields:
             for bits in ForEachBits(signal.fields[subsig]):
                 yield bits
+
     else:
         assert False
 
 @contextmanager
-def VModule(f, name : str, io_dict : dict):
-    VEmitRaw(f, f'module {name} (')
+def VModule(name : str, io_dict : dict):
+    VEmitRaw(f'module {name} (')
 
     for key in io_dict:
         parent_dir = io_dict[key].sigdir
@@ -74,15 +103,77 @@ def VModule(f, name : str, io_dict : dict):
             dirstr = dirstr_map[sigdir]
 
             if signal.width == 1:
-                VEmitRaw(f, f'{dirstr} {VName(signal)},')
+                VEmitRaw(f'{dirstr} {VName(signal)},')
             else:
                 assert signal.width > 1
-                VEmitRaw(f, f'{dirstr} {VName(signal)}[{signal.width}],')
+                VEmitRaw(f'{dirstr} {VName(signal)}[{signal.width}],')
 
-    VEmitRaw(f, ');')
+    VEmitRaw(');')
+
+    Indent()
     yield
+    Dedent()
 
-    VEmitRaw(f, 'endmodule')
+    VEmitRaw('endmodule')
+
+def VDecl(signal):
+    for bits in ForEachBits(signal):
+        sigdir = bits.sigdir
+
+        if bits.flipped:
+            sigdir = flip_map[sigdir]
+
+        statestr = statestr_map[bits.sigstate]
+
+        if bits.width == 1:
+            VEmitRaw(f'{statestr_map[bits.sigstate]} {VName(bits)};')
+        else:
+            assert bits.width > 1
+            VEmitRaw(f'{statestr_map[bits.sigstate]} {VName(bits)}[{bits.width}];')
 
 def VAssign(lhs, rhs):
-    VEmitRaw(f, f'assign {lhs} = {rhs};')
+    VEmitRaw(f'assign {lhs} = {rhs};')
+
+def VConnect(lhs, rhs):
+    VEmitRaw(f'{lhs} <= {rhs};')
+
+@contextmanager
+def VAlways(signal_list=None):
+    if signal_list is None:
+        VEmitRaw('always @* begin')
+
+    else:
+        signal_names = [
+            VName(bits)
+            for signal in signal_list
+            for bits in ForEachBits(bits)
+        ]
+
+        names_str = ', '.join(signal_names)
+
+        VEmitRaw(f'always @({names_str}) begin')
+
+    Indent()
+    yield
+    Dedent()
+
+    VEmitRaw(f'end')
+
+@contextmanager
+def VIf(bits):
+    assert type(bits) is BitsSignal
+    assert bits.width == 1
+
+    VEmitRaw(f'if ({VName(bits)}) begin')
+    Indent()
+    yield
+    Dedent()
+    VEmitRaw('end')
+
+@contextmanager
+def VElse():
+    VEmitRaw(f'else begin')
+    Indent()
+    yield
+    Dedent()
+    VEmitRaw('end')

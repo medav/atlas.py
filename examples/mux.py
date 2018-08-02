@@ -9,12 +9,6 @@ def Mux(n=8):
         'a': Input(Bits(n)),
         'b': Input(Bits(n)),
         'sel': Input(Bits(1)),
-        'foo': Input({
-            'bazz': Bits(2),
-            'buzz': [
-                Bits(1) for _ in range(4)
-            ]
-        }),
         'out': Output(Bits(n))
     })
 
@@ -23,10 +17,12 @@ def Mux(n=8):
     with otherwise:
         io.out <<= io.a
 
+    NameSignals(locals())
+
 circuit = Circuit()
 with circuit:
     top = Mux()
 
 circuit.SetTop(top)
 
-EmitCircuit(None, circuit)
+EmitCircuit(circuit)
