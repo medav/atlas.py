@@ -30,7 +30,6 @@ class BitsSignal(SignalBase):
     width : int = field(default=1)
     signed : bool = field(default=False, repr=False)
     flipped : bool = field(default=False, repr=False)
-    connections : list = field(default_factory=lambda: [], repr=False)
 
 @dataclass
 class ListSignal(SignalBase):
@@ -49,8 +48,14 @@ class IoBundle(object):
 
 @dataclass
 class Connection(object):
-    predicate : list
+    lhs : SignalBase
     rhs : SignalBase
+
+@dataclass
+class ConnectionBlock(object):
+    predicate : SignalBase = None
+    true_block : list = field(default_factory=lambda: [], compare=False, repr=False)
+    false_block : list = field(default_factory=lambda: [], compare=False, repr=False)
 
 @dataclass
 class Module(object):
@@ -59,6 +64,7 @@ class Module(object):
     instances : dict = field(default_factory=lambda: {}, compare=False, repr=False)
     signals : list = field(default_factory=lambda: [], compare=False, repr=False)
     ops : list = field(default_factory=lambda: [], compare=False, repr=False)
+    connections : list = field(default_factory=lambda: [], compare=False, repr=False)
 
 @dataclass
 class Circuit(object):

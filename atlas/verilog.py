@@ -4,6 +4,7 @@ from .model import *
 
 __all__ = [
     'VEmitRaw',
+    'VPosedge',
     'VName',
     'ForEachBits',
     'VModule',
@@ -31,7 +32,17 @@ def VEmitRaw(line):
     print('    ' * indent + line)
     # f.write(f'{line}\n')
 
-def VName(signal : SignalBase):
+@dataclass
+class VPosedge(object):
+    signal : SignalBase
+
+def VName(item):
+    if type(item) is VPosedge:
+        return f'posedge({VName(item.signal)})'
+
+    # This is a signal, name it accordingly.
+    signal = item
+
     if signal.typespec == SignalTypes.BUNDLE:
         raise TypeError('Bundles do not have Verilog names')
     elif signal.typespec == SignalTypes.LIST:
@@ -103,10 +114,10 @@ def VModule(name : str, io_dict : dict):
             dirstr = dirstr_map[sigdir]
 
             if signal.width == 1:
-                VEmitRaw(f'{dirstr} {VName(signal)},')
+                VEmitRaw(f'{dirstr} reg {VName(signal)},')
             else:
                 assert signal.width > 1
-                VEmitRaw(f'{dirstr} {VName(signal)}[{signal.width}],')
+                VEmitRaw(f'{dirstr} reg {VName(signal)}[{signal.width}],')
 
     VEmitRaw(');')
 
@@ -134,8 +145,12 @@ def VDecl(signal):
 def VAssign(lhs, rhs):
     VEmitRaw(f'assign {lhs} = {rhs};')
 
-def VConnect(lhs, rhs):
-    VEmitRaw(f'{lhs} <= {rhs};')
+def VConnect(lbits : SignalBase, rbits : SignalBase):
+    assert lbits.sigdir != SignalTypes.INPUT
+    assert lbits.sigtype == SignalTypes.BITS
+    # assert lbits.sigstate == SignalTypes.REG
+    assert rbits.sigtype == SignalTypes.BITS
+    VEmitRaw(f'{VName(lbits)} <= {VName(rbits)};')
 
 @contextmanager
 def VAlways(signal_list=None):
@@ -161,7 +176,7 @@ def VAlways(signal_list=None):
 
 @contextmanager
 def VIf(bits):
-    assert type(bits) is BitsSignal
+    assert bits.sigtype == SignalTypes.BITS
     assert bits.width == 1
 
     VEmitRaw(f'if ({VName(bits)}) begin')

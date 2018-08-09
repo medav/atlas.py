@@ -30,7 +30,7 @@ class BitsSignal(model.BitsSignal):
             flipped=typespec['flipped'])
 
     def Assign(self, other):
-        self.connections.append(model.Connection(CurrentPredicate(), other))
+        CurrentContext().append(model.Connection(self, other))
 
     def __ilshift__(self, other):
         self.Assign(other)
@@ -42,7 +42,7 @@ class BitsSignal(model.BitsSignal):
         StartCondition(self)
 
     def __exit__(self, *kwargs):
-        EndCondition(self)
+        EndCondition()
 
     def __add__(self, other): return Add(self, other)
     def __sub__(self, other): return Sub(self, other)
@@ -113,11 +113,13 @@ def Signal(typespec, name=None, parent=None):
 def Input(typespec):
     signal = Signal(typespec)
     signal.sigdir = model.SignalTypes.INPUT
+    signal.sigstate = model.SignalTypes.WIRE
     return signal
 
 def Output(typespec):
     signal = Signal(typespec)
     signal.sigdir = model.SignalTypes.OUTPUT
+    signal.sigstate = model.SignalTypes.WIRE
     return signal
 
 def Inout(typespec):
