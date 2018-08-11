@@ -3,20 +3,34 @@ from contextlib import contextmanager
 from .model import *
 
 __all__ = [
+    'VFile',
     'VEmitRaw',
     'VPosedge',
     'VName',
     'ForEachBits',
+    'ForEachIoBits',
     'VModule',
-    'VDecl',
+    'VDeclReg',
+    'VDeclWire',
     'VAlways',
+    'VAssignRaw',
     'VAssign',
+    'VConnectRaw',
     'VConnect',
     'VIf',
     'VElse'
 ]
 
+current_file = None
 indent = 0
+
+@contextmanager
+def VFile(filename):
+    global current_file
+    with open(filename, 'w') as f:
+        current_file = f
+        yield
+        current_file = None
 
 def Indent():
     global indent
@@ -29,7 +43,9 @@ def Dedent():
 
 def VEmitRaw(line):
     global indent
-    print('    ' * indent + line)
+    global current_file
+    assert current_file is not None
+    current_file.write('    ' * indent + line + '\n')
     # f.write(f'{line}\n')
 
 @dataclass
@@ -38,14 +54,14 @@ class VPosedge(object):
 
 def VName(item):
     if type(item) is VPosedge:
-        return f'posedge({VName(item.signal)})'
+        return f'posedge(clock)'
 
     # This is a signal, name it accordingly.
     signal = item
 
-    if signal.typespec == SignalTypes.BUNDLE:
+    if signal.sigtype == SignalTypes.BUNDLE:
         raise TypeError('Bundles do not have Verilog names')
-    elif signal.typespec == SignalTypes.LIST:
+    elif signal.sigtype == SignalTypes.LIST:
         raise TypeError('Lists do not have Verilog names')
 
     if signal.name is None:
@@ -71,17 +87,6 @@ dirstr_map = {
     SignalTypes.INOUT: 'inout',
 }
 
-statestr_map = {
-    SignalTypes.WIRE: 'wire',
-    SignalTypes.REG: 'reg'
-}
-
-flip_map = {
-    SignalTypes.INPUT: SignalTypes.OUTPUT,
-    SignalTypes.OUTPUT: SignalTypes.INPUT,
-    SignalTypes.INOUT: SignalTypes.INOUT,
-}
-
 def ForEachBits(signal):
     if signal.sigtype == SignalTypes.BITS:
         yield signal
@@ -99,26 +104,32 @@ def ForEachBits(signal):
     else:
         assert False
 
-@contextmanager
-def VModule(name : str, io_dict : dict):
-    VEmitRaw(f'module {name} (')
-
+def ForEachIoBits(io_dict):
     for key in io_dict:
-        parent_dir = io_dict[key].sigdir
-        for signal in ForEachBits(io_dict[key]):
-            sigdir = parent_dir
+        signal = io_dict[key]
+        parent_dir = signal.sigdir
+        for bits in ForEachBits(signal):
+            sigdir = signal.sigdir
 
             if signal.flipped:
                 sigdir = flip_map[sigdir]
 
-            dirstr = dirstr_map[sigdir]
+            yield bits, sigdir
 
-            if signal.width == 1:
-                VEmitRaw(f'{dirstr} reg {VName(signal)},')
-            else:
-                assert signal.width > 1
-                VEmitRaw(f'{dirstr} reg {VName(signal)}[{signal.width}],')
+@contextmanager
+def VModule(name : str, io_dict : dict):
+    VEmitRaw(f'module {name} (')
+    Indent()
 
+    for bits, sigdir in ForEachIoBits(io_dict):
+        dirstr = dirstr_map[sigdir]
+        if bits.width == 1:
+            VEmitRaw(f'{dirstr} {VName(bits)},')
+        else:
+            assert bits.width > 1
+            VEmitRaw(f'{dirstr} [{bits.width - 1} : 0] {VName(bits)},')
+
+    Dedent()
     VEmitRaw(');')
 
     Indent()
@@ -127,42 +138,53 @@ def VModule(name : str, io_dict : dict):
 
     VEmitRaw('endmodule')
 
-def VDecl(signal):
+def VDecl(signal, decltype='wire'):
     for bits in ForEachBits(signal):
-        sigdir = bits.sigdir
-
-        if bits.flipped:
-            sigdir = flip_map[sigdir]
-
-        statestr = statestr_map[bits.sigstate]
-
         if bits.width == 1:
-            VEmitRaw(f'{statestr_map[bits.sigstate]} {VName(bits)};')
+            VEmitRaw(f'{decltype} {VName(bits)};')
         else:
             assert bits.width > 1
-            VEmitRaw(f'{statestr_map[bits.sigstate]} {VName(bits)}[{bits.width}];')
+            VEmitRaw(f'{decltype} [{bits.width - 1} : 0] {VName(bits)};')
 
-def VAssign(lhs, rhs):
+def VDeclWire(signal):
+    VDecl(signal)
+
+def VDeclReg(signal):
+    VDecl(signal, 'reg')
+
+def VAssignRaw(lhs, rhs):
     VEmitRaw(f'assign {lhs} = {rhs};')
+
+def VAssign(lbits, rbits):
+    VAssignRaw(VName(lbits), VName(rbits))
+
+def VConnectRaw(lhs, rhs):
+    VEmitRaw(f'{lhs} <= {rhs};')
 
 def VConnect(lbits : SignalBase, rbits : SignalBase):
     assert lbits.sigdir != SignalTypes.INPUT
     assert lbits.sigtype == SignalTypes.BITS
     # assert lbits.sigstate == SignalTypes.REG
     assert rbits.sigtype == SignalTypes.BITS
-    VEmitRaw(f'{VName(lbits)} <= {VName(rbits)};')
+    VConnectRaw(VName(lbits), VName(rbits))
 
 @contextmanager
-def VAlways(signal_list=None):
-    if signal_list is None:
+def VAlways(condition_list=None):
+    if condition_list is None:
         VEmitRaw('always @* begin')
 
     else:
-        signal_names = [
-            VName(bits)
-            for signal in signal_list
-            for bits in ForEachBits(bits)
-        ]
+        signal_names = []
+
+        for item in condition_list:
+            if type(item) is VPosedge:
+                assert item.signal.sigtype == SignalTypes.BITS
+                signal_names.append(f'posedge({VName(item.signal)})')
+            else:
+                signal_names += [
+                    VName(bits)
+                    for bits in ForEachBits(item)
+                ]
 
         names_str = ', '.join(signal_names)
 
@@ -175,11 +197,13 @@ def VAlways(signal_list=None):
     VEmitRaw(f'end')
 
 @contextmanager
-def VIf(bits):
+def VIf(bits, invert=False):
     assert bits.sigtype == SignalTypes.BITS
     assert bits.width == 1
 
-    VEmitRaw(f'if ({VName(bits)}) begin')
+    invert_str = '!' if invert else ''
+
+    VEmitRaw(f'if ({invert_str}{VName(bits)}) begin')
     Indent()
     yield
     Dedent()

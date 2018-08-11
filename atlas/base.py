@@ -3,13 +3,13 @@ import copy
 from hashlib import sha256
 
 from . import model
-from . import op
 
 __all__ = [
     'Module',
     'Circuit',
+    'CurrentCircuit',
     'CurrentModule',
-    'CurrentContext',
+    'CurrentPredicate',
     'StartCondition',
     'EndCondition',
     'Instance',
@@ -19,11 +19,13 @@ __all__ = [
 
 circuit = None
 modules = []
-context = []
+predicate = []
+prevcondition = None
 
 class Circuit(model.Circuit):
-    def __init__(self):
-        model.Circuit.__init__(self, 'top')
+    def __init__(self, clock=False, reset=False):
+        config = model.CircuitConfig(clock, reset)
+        model.Circuit.__init__(self, 'top', config=config)
 
     def SetTop(self, module):
         assert module in self.modules
@@ -40,20 +42,24 @@ class Circuit(model.Circuit):
         assert circuit == self
         circuit = None
 
+def CurrentCircuit():
+    global circuit
+    return circuit
+
 def CurrentModule():
     global modules
     assert len(modules) > 0
     return modules[-1]
 
-def CurrentContext():
-    global context
-    assert len(context) > 0
-    return context[-1]
+def CurrentPredicate():
+    global predicate
+    return predicate
 
 def Module(func):
     def ModuleWrapper(*args, **kwargs):
         global modules
-        global context
+        global predicate
+        global prevcondition
         global circuit
 
         module_name = func.__name__
@@ -70,8 +76,7 @@ def Module(func):
 
         if m is None:
             modules.append(model.Module(module_name))
-            assert len(context) == 0
-            context.append(CurrentModule().connections)
+            assert len(predicate) == 0
             prevcondition = None
 
             func(*args, **kwargs)
@@ -79,8 +84,7 @@ def Module(func):
             assert len(modules) > 0
             m = modules.pop()
 
-            assert len(context) == 1
-            context.pop()
+            assert len(predicate) == 0
 
             circuit.modules.append(m)
 
@@ -110,20 +114,20 @@ def Instance(module):
     return inst
 
 def StartCondition(signal):
-    global context
-    block = model.ConnectionBlock(predicate=signal)
-    CurrentContext().append(block)
-    context.append(block.true_block)
+    global predicate
+    predicate.append((signal, True))
 
 def ElseCondition():
-    global context
-    block = CurrentContext()[-1]
-    assert type(block) is model.ConnectionBlock
-    context.append(block.false_block)
+    global predicate
+    global prevcondition
+    assert prevcondition is not None
+    predicate.append((prevcondition, False))
 
 def EndCondition():
-    global context
-    context.pop()
+    global predicate
+    global prevcondition
+    assert len(predicate) > 0
+    prevcondition = predicate.pop()[0]
 
 class OtherwiseObject(object):
     def __init__(self):

@@ -8,69 +8,98 @@ __all__ = [
     'EmitCircuit'
 ]
 
-def NavigateTo(current_predicate, new_predicate):
-    pass
-
-def CreateIntermediate(bits, int_map : dict):
+def CreateIntermediate(bits):
     int_bits = copy.copy(bits)
     int_bits.name = f'{bits.name}_int_'
-    int_bits.sigstate = SignalTypes.REG
-    int_map[bits.name] = (bits, int_bits)
     return int_bits
 
-def EmitConnections(module, block_list, int_map, emit_comb=True):
-    for item in block_list:
-        if type(item) is Connection:
-            assert item.lhs.sigtype == SignalTypes.BITS
-            assert item.rhs.sigtype == SignalTypes.BITS
+def EmitConnections(bits, connections):
+    for item in connections:
+        if type(item) is ConnectionBlock:
 
-            if emit_comb and (item.lhs.sigstate == SignalTypes.WIRE):
-                if item.lhs.name in int_map:
-                    VConnect(int_map[item.lhs.name][1], item.rhs)
-                else:
-                    VConnect(item.lhs, item.rhs)
-            elif (not emit_comb) and (item.lhs.sigstate == SignalTypes.REG):
-                VConnect(item.lhs, item.rhs)
+            if len(item.true_block) > 0:
+                with VIf(item.predicate):
+                    EmitConnections(bits, item.true_block)
 
-        elif type(item) is ConnectionBlock:
-            with VIf(item.predicate):
-                EmitConnections(module, item.true_block, int_map, emit_comb)
-            
             if len(item.false_block) > 0:
-                with VElse():
-                    EmitConnections(module, item.false_block, int_map, emit_comb)
+                if len(item.true_block) == 0:
+                    with VIf(item.predicate, invert=True):
+                        EmitConnections(bits, item.false_block)
+                else:
+                    with VElse():
+                        EmitConnections(bits, item.false_block)
         else:
-            assert False
+            assert item.sigtype == SignalTypes.BITS
+            assert bits.width == item.width
+            VConnect(bits, item)
 
-def EmitCombinationalLogic(module, int_map):
+def EmitComb(bits, connections):
+    assert bits.clock is None
     with VAlways():
-        EmitConnections(module, module.connections, int_map)
+        EmitConnections(bits, connections)
 
-def EmitSequentialLogic(module):
-    pass
-    # with VAlways(VPosedge(module.io.clock)):
-    #     pass
+def EmitSeq(bits, connections):
+    assert bits.clock is not None
+    
+    with VAlways([VPosedge(bits.clock)]):
+        if (bits.reset is not None) and (bits.reset_value is not None):
+            with VIf(bits.reset):
+                VConnect(bits, bits.reset_value)
+            with VElse():
+                EmitConnections(bits, connections)
+        else:
+            EmitConnections(bits, connections)
 
 def EmitModule(module):
-    int_map = {}
+    signals = []
 
     with VModule(module.name, module.io.io_dict):
+        VEmitRaw('// IO Declarations')
+        for bits, sigdir in ForEachIoBits(module.io.io_dict):
+            if sigdir != SignalTypes.INPUT:
+                int_bits = CreateIntermediate(bits)
+                VDeclReg(int_bits)
+                VAssign(bits, int_bits)
+                signals.append((int_bits, bits.connections))
 
+        VEmitRaw('')
+
+        VEmitRaw('// Internal Signal Declarations')
         for signal in module.signals:
             for bits in ForEachBits(signal):
-                VDecl(bits)
+                
 
-                if bits.sigstate == SignalTypes.WIRE:
-                    int_bits = CreateIntermediate(bits, int_map)
-                    VDecl(int_bits)
+                if bits.clock is None:
+                    int_bits = CreateIntermediate(bits)
+                    VDeclWire(bits)
+                    VDeclReg(int_bits)
+                    VAssign(bits, int_bits)
+                    signals.append((int_bits, bits.connections))
+                else:
+                    VDeclReg(bits)
+                    signals.append((bits, bits.connections))
 
-        for key in int_map:
-            (bits, int_bits) = int_map[key]
-            VConnect(bits, int_bits)
+        for op in module.ops:
+            op.Declare()
 
-        EmitCombinationalLogic(module, int_map)
-        EmitSequentialLogic(module)
+        VEmitRaw('')
 
-def EmitCircuit(circuit):
-    for module in circuit.modules:
-        EmitModule(module)
+        VEmitRaw(f'// Operator Synthesis')
+        for op in module.ops:
+            op.Synthesize()
+
+        VEmitRaw('')
+
+        VEmitRaw(f'// Connections')
+        for bits, connections in signals:
+            VEmitRaw(f'// Connections for {VName(signal)}')
+            if bits.clock is None:
+                EmitComb(bits, connections)
+            else:
+                EmitSeq(bits, connections)
+            VEmitRaw('')
+
+def EmitCircuit(circuit, filename='a.v'):
+    with VFile(filename):
+        for module in circuit.modules:
+            EmitModule(module)

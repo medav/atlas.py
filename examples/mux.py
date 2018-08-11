@@ -24,5 +24,4 @@ with circuit:
     top = Mux()
 
 circuit.SetTop(top)
-
 EmitCircuit(circuit)
