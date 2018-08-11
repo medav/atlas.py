@@ -20,18 +20,18 @@ def RippleAdder(n):
     })
 
     carry = io.cin
-    out_arr = Wire(Bits(1, (n,)))
+    out_arr = Wire([Bits(1) for i in range(n)])
 
     for i in range(n):
         sum_i, carry = FullAdder(carry, io.a(i, i), io.b(i, i))
         out_arr[i] <<= sum_i
-    
+
     io.cout <<= carry
     io.sum_out <<= Cat([out_arr[n - i - 1] for i in range(n)])
 
     NameSignals(locals())
 
-circuit = Circuit(True, True)
+circuit = Circuit()
 with circuit:
     top = RippleAdder(64)
 

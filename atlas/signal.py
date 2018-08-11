@@ -66,6 +66,20 @@ class NotOperator(op.AtlasOperator):
     def Synthesize(self):
         VAssignRaw(VName(self.result), f'~{VName(self.sig_a)}')
 
+class SliceOperator(op.AtlasOperator):
+    def __init__(self, sig_a, high, low):
+        assert high >= low
+        super().__init__(Signal(Bits(high - low + 1, False)), 'slice')
+        self.sig_a = sig_a
+        self.high = high
+        self.low = low
+
+    def Declare(self):
+        VDeclWire(self.result)
+
+    def Synthesize(self):
+        VAssignRaw(VName(self.result), f'{VName(self.sig_a)}[{self.high}:{self.low}]')
+
 class BitsSignal(model.BitsSignal):
     def __init__(self, typespec, name=None, parent=None):
         if not IsBits(typespec):
@@ -87,6 +101,9 @@ class BitsSignal(model.BitsSignal):
         if self.width != 1:
             raise RuntimeError("Conditions must have bitwidth == 1")
         StartCondition(self)
+
+    def __call__(self, high, low):
+        return SliceOperator(self, high, low).result
 
     def __exit__(self, *kwargs):
         EndCondition()
@@ -119,8 +136,19 @@ class ListSignal(model.ListSignal):
             parent=parent,
             fields=fields)
 
+    def __ilshift__(self, other):
+        assert isinstance(other, model.SignalBase)
+        assert other.sigtype == model.SignalTypes.LIST
+        assert len(other.fields) == len(self.fields)
+
+        for i in range(len(self.fields)):
+            self.fields[i] <<= other.fields[i]
+
     def __getitem__(self, key):
         return self.fields[key]
+
+    def __setitem__(self, key, value):
+        pass
 
 class BundleSignal(model.BundleSignal):
     def __init__(self, typespec, name=None, parent=None):
@@ -217,9 +245,8 @@ def Reg(typespec, clock=None, reset=None, reset_value=None):
         signal.reset = CurrentModule().io.reset
 
     signal.reset_value = reset_value
-
     CurrentModule().signals.append(signal)
-    signal.connections.append(signal)
+    signal <<= signal
     return signal
 
 def NameSignals(locals):

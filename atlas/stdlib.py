@@ -22,30 +22,42 @@ def Log2Floor(n):
 def Log2Ceil(n):
     return int(math.ceil(math.log2(n)))
 
+class CatOperator(op.AtlasOperator):
+    def __init__(self, signals):
+        self.width = 0
+
+        for signal in signals:
+            assert signal.sigtype == model.SignalTypes.BITS
+            self.width += signal.width
+
+        super().__init__(Signal(Bits(self.width, False)), 'cat')
+        self.signals = signals
+
+    def Declare(self):
+        VDeclWire(self.result)
+
+    def Synthesize(self):
+        catstr = \
+            '{' + ', '.join([VName(signal) for signal in self.signals]) + '}'
+
+        VAssignRaw(VName(self.result), catstr)
+
 def Cat(signals):
-    if len(signals) == 1:
-        return signals[0]
-
-    elif len(signals) == 2:
-        n = Node('cat', signals)
-        CurrentContext().AddNode(n)
-        return n
-
-    else:
-        half = int(len(signals) / 2)
-        n1 = Cat(signals[:half])
-        n2 = Cat(signals[half:])
-        return Cat([n1, n2])
+    return CatOperator(signals).result
 
 class Enum():
-    def __init__(self, _ids):
-        self.count = len(_ids)
+    def __init__(self, names):
+        self.count = len(names)
         self.bitwidth = Log2Ceil(self.count)
+        self.values = {}
 
         i = 0
-        for id in _ids:
-            self.__dict__[id] = Const(i, self.bitwidth, False)
+        for name in names:
+            self.values[name] = Const(i, self.bitwidth)
             i += 1
+
+    def __getattr__(self, name):
+        return self.values[name]
 
 class ConstOperator(op.AtlasOperator):
     def __init__(self, value, width):
@@ -59,5 +71,11 @@ class ConstOperator(op.AtlasOperator):
     def Synthesize(self):
         VAssignRaw(VName(self.result), f'{self.value}')
 
-def Const(value, width):
+def Const(value, width=0):
+    if width == 0:
+        if value == 0:
+            width = 1
+        else:
+            width = max(1, Log2Ceil(value))
+
     return ConstOperator(value, width).result

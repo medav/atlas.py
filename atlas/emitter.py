@@ -40,7 +40,7 @@ def EmitComb(bits, connections):
 
 def EmitSeq(bits, connections):
     assert bits.clock is not None
-    
+
     with VAlways([VPosedge(bits.clock)]):
         if (bits.reset is not None) and (bits.reset_value is not None):
             with VIf(bits.reset):
@@ -67,7 +67,6 @@ def EmitModule(module):
         VEmitRaw('// Internal Signal Declarations')
         for signal in module.signals:
             for bits in ForEachBits(signal):
-                
 
                 if bits.clock is None:
                     int_bits = CreateIntermediate(bits)
@@ -92,7 +91,7 @@ def EmitModule(module):
 
         VEmitRaw(f'// Connections')
         for bits, connections in signals:
-            VEmitRaw(f'// Connections for {VName(signal)}')
+            VEmitRaw(f'// Connections for {VName(bits)}')
             if bits.clock is None:
                 EmitComb(bits, connections)
             else:

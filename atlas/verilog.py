@@ -121,13 +121,21 @@ def VModule(name : str, io_dict : dict):
     VEmitRaw(f'module {name} (')
     Indent()
 
+    io_lines = []
+
     for bits, sigdir in ForEachIoBits(io_dict):
         dirstr = dirstr_map[sigdir]
         if bits.width == 1:
-            VEmitRaw(f'{dirstr} {VName(bits)},')
+            io_lines.append(f'{dirstr} {VName(bits)}')
         else:
             assert bits.width > 1
-            VEmitRaw(f'{dirstr} [{bits.width - 1} : 0] {VName(bits)},')
+            io_lines.append(f'{dirstr} [{bits.width - 1} : 0] {VName(bits)}')
+
+    for i in range(len(io_lines)):
+        if i == len(io_lines) - 1:
+            VEmitRaw(io_lines[i])
+        else:
+            VEmitRaw(io_lines[i] + ',')
 
     Dedent()
     VEmitRaw(');')
