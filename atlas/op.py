@@ -1,5 +1,8 @@
 from . import model
-from .base import RegisterOp
+from .frontend import RegisterOp
+
+from .debug import *
+from .utilities import *
 
 uid = 0
 
@@ -9,11 +12,19 @@ def GetUniqueName(opname):
     uid += 1
     return uname
 
-class AtlasOperator:
-    def __init__(self, result, opname):
-        self.result = result
-        self.result.name = GetUniqueName(opname)
+class AtlasOperator(object):
+    def __init__(self, opname):
+        self.name = GetUniqueName(opname)
+        self.outputs = {}
         RegisterOp(self)
+
+    def RegisterOutput(self, signal, name='result'):
+        signal.parent = self
+        signal.name = name
+        self.outputs[name] = signal
+
+    def __getattr__(self, key):
+        return self.outputs[key]
 
     def Declare(self):
         raise NotImplementedError()

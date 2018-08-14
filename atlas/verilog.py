@@ -1,14 +1,13 @@
 from contextlib import contextmanager
 
 from .model import *
+from .utilities import *
 
 __all__ = [
     'VFile',
     'VEmitRaw',
     'VPosedge',
     'VName',
-    'ForEachBits',
-    'ForEachIoBits',
     'VModule',
     'VDeclReg',
     'VDeclWire',
@@ -52,13 +51,16 @@ def VEmitRaw(line):
 class VPosedge(object):
     signal : SignalBase
 
-def VName(item):
-    if type(item) is VPosedge:
-        return f'posedge(clock)'
+def VNameInt(item : int):
+    return str(item)
 
-    # This is a signal, name it accordingly.
-    signal = item
+def VNameStr(item : str):
+    return item
 
+def VNameEdge(item : VPosedge):
+    return f'posedge(clock)'
+
+def VNameSignal(item : SignalBase):
     if signal.sigtype == SignalTypes.BUNDLE:
         raise TypeError('Bundles do not have Verilog names')
     elif signal.sigtype == SignalTypes.LIST:
@@ -81,40 +83,20 @@ def VName(item):
 
     return name
 
-dirstr_map = {
-    SignalTypes.INPUT: 'input',
-    SignalTypes.OUTPUT: 'output',
-    SignalTypes.INOUT: 'inout',
+name_func_map = {
+    int: VNameInt,
+    str: VNameStr,
+    VPosedge: VNameEdge,
+    SignalBase: VNameSignal
 }
 
-def ForEachBits(signal):
-    if signal.sigtype == SignalTypes.BITS:
-        yield signal
+def VName(item):
+    for key in name_func_map:
+        if isinstance(item, key):
+            return name_func_map[key](item)
 
-    elif signal.sigtype == SignalTypes.LIST:
-        for subsig in signal.fields:
-            for bits in ForEachBits(subsig):
-                yield bits
+    assert False
 
-    elif signal.sigtype == SignalTypes.BUNDLE:
-        for subsig in signal.fields:
-            for bits in ForEachBits(signal.fields[subsig]):
-                yield bits
-
-    else:
-        assert False
-
-def ForEachIoBits(io_dict):
-    for key in io_dict:
-        signal = io_dict[key]
-        parent_dir = signal.sigdir
-        for bits in ForEachBits(signal):
-            sigdir = signal.sigdir
-
-            if signal.flipped:
-                sigdir = flip_map[sigdir]
-
-            yield bits, sigdir
 
 @contextmanager
 def VModule(name : str, io_dict : dict):
@@ -169,12 +151,10 @@ def VAssign(lbits, rbits):
 def VConnectRaw(lhs, rhs):
     VEmitRaw(f'{lhs} <= {rhs};')
 
-def VConnect(lbits : SignalBase, rbits : SignalBase):
+def VConnect(lbits : SignalBase, rhs):
     assert lbits.sigdir != SignalTypes.INPUT
     assert lbits.sigtype == SignalTypes.BITS
-    # assert lbits.sigstate == SignalTypes.REG
-    assert rbits.sigtype == SignalTypes.BITS
-    VConnectRaw(VName(lbits), VName(rbits))
+    VConnectRaw(VName(lbits), VName(rhs))
 
 @contextmanager
 def VAlways(condition_list=None):

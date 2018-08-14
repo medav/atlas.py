@@ -1,19 +1,22 @@
 import math
 from contextlib import contextmanager
 
+from .debug import *
+from .utilities import *
+
 from . import model
-from .base import *
+from . import op
+
+from .frontend import *
 from .signal import *
 from .verilog import *
-from . import op
 from .typespec import *
 
 __all__ = [
     'Log2Floor',
     'Log2Ceil',
     'Cat',
-    'Enum',
-    'Const'
+    'Enum'
 ]
 
 def Log2Floor(n):
@@ -30,8 +33,9 @@ class CatOperator(op.AtlasOperator):
             assert signal.sigtype == model.SignalTypes.BITS
             self.width += signal.width
 
-        super().__init__(Signal(Bits(self.width, False)), 'cat')
+        super().__init__('cat')
         self.signals = signals
+        self.RegisterOutput(Signal(Bits(self.width, False)))
 
     def Declare(self):
         VDeclWire(self.result)
@@ -48,34 +52,13 @@ def Cat(signals):
 class Enum():
     def __init__(self, names):
         self.count = len(names)
-        self.bitwidth = Log2Ceil(self.count)
+        self.bitwidth = 1 if self.count == 1 else Log2Ceil(self.count)
         self.values = {}
 
         i = 0
         for name in names:
-            self.values[name] = Const(i, self.bitwidth)
+            self.values[name] = i
             i += 1
 
     def __getattr__(self, name):
         return self.values[name]
-
-class ConstOperator(op.AtlasOperator):
-    def __init__(self, value, width):
-        super().__init__(Signal(Bits(width, False)), 'const')
-        self.value = value
-        self.width = width
-
-    def Declare(self):
-        VDeclWire(self.result)
-
-    def Synthesize(self):
-        VAssignRaw(VName(self.result), f'{self.value}')
-
-def Const(value, width=0):
-    if width == 0:
-        if value == 0:
-            width = 1
-        else:
-            width = max(1, Log2Ceil(value))
-
-    return ConstOperator(value, width).result

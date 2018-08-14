@@ -1,5 +1,8 @@
 import copy
 
+from .debug import *
+from .utilities import *
+
 from .model import *
 from .verilog import *
 
@@ -29,8 +32,6 @@ def EmitConnections(bits, connections):
                     with VElse():
                         EmitConnections(bits, item.false_block)
         else:
-            assert item.sigtype == SignalTypes.BITS
-            assert bits.width == item.width
             VConnect(bits, item)
 
 def EmitComb(bits, connections):
