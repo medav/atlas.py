@@ -74,23 +74,30 @@ class SliceOperator(op.AtlasOperator):
     def Synthesize(self):
         VAssignRaw(VName(self.result), f'{VName(self.op0)}[{self.high}:{self.low}]')
 
-class LeftIndexOperator(op.AtlasOperator):
-    def __init__(self, list_signal, index_signal):
-        assert list_signal.sigtype == model.SignalTypes.LIST
-        assert index_signal.sigtype == model.SignalTypes.BITS
-        super().__init__('slice')
-        self.list_signal = list_signal
-        self.index_signal = index_signal
-        self.RegisterOutput(Signal(Bits(list_signal[0].width, False)))
+def Mux(list_signal, index_signal):
+    result = Wire(list_signal[0].typespec)
+    result.name = op.GetUniqueName('mux')
 
-    def Declare(self):
-        VDeclWire(self.result)
+    for i in range(len(list_signal)):
+        with index_signal == i:
+            result <<= list_signal[i]
 
-    def Synthesize(self):
-        VEmitRaw('assign = ')
+    return result
+
+
+@dataclass
+class ListIndex(object):
+    list_signal : ListSignal
+    index_signal : BitsSignal
+    rhs : model.SignalBase = field(init=False)
+
+    def __post_init__(self):
+        self.rhs = Mux(self.list_signal, self.index_signal)
+
+    def __ilshift__(self, value):
         for i in range(len(self.list_signal)):
-            VEmitRaw(f'    ({VName(self.index_signal)} == {i}) ? {VName(self.index_signal[i])} :')
-        VEmitRaw('    0;')
+            with self.index_signal == i:
+                self.list_signal[i] <<= value
 
 class BitsSignal(model.BitsSignal):
     def __init__(self, typespec, name=None, parent=None):
@@ -106,7 +113,10 @@ class BitsSignal(model.BitsSignal):
             flipped=typespec['flipped'])
 
     def __ilshift__(self, other):
-        if isinstance(other, model.SignalBase):
+        if isinstance(other, ListIndex):
+            other = other.rhs
+
+        elif isinstance(other, model.SignalBase):
             assert other.sigtype == model.SignalTypes.BITS
 
         assert self.sigdir != model.SignalTypes.INPUT
@@ -151,14 +161,6 @@ class BitsSignal(model.BitsSignal):
     def __ne__(self, other): return BinaryOperator(self, other, 'neq', '!=', 1).result
     def __invert__(self): return NotOperator(self).result
 
-@dataclass
-class ListIndex(object):
-    list_signal : ListSignal
-    index_signal : BitsSignal
-
-    def __ilshift__(self, value):
-        pass
-
 class ListSignal(model.ListSignal):
     def __init__(self, typespec, name=None, parent=None):
         if type(typespec) is not list:
@@ -173,6 +175,9 @@ class ListSignal(model.ListSignal):
             fields=fields)
 
     def __ilshift__(self, other):
+        if isinstance(other, ListIndex):
+            other = other.rhs
+
         if isinstance(other, model.SignalBase):
             assert other.sigtype == model.SignalTypes.LIST
             assert len(other.fields) == len(self.fields)
@@ -215,6 +220,9 @@ class BundleSignal(model.BundleSignal):
             fields=fields)
 
     def __ilshift__(self, other):
+        if isinstance(other, ListIndex):
+            other = other.rhs
+
         if isinstance(other, model.SignalBase):
             assert other.sigtype == model.SignalTypes.LIST
             assert set(self.fields.keys()) == set(other.fields.keys())

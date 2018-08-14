@@ -1,4 +1,5 @@
 from .model import *
+from .typespec import *
 
 dirstr_map = {
     SignalTypes.INPUT: 'input',
@@ -25,6 +26,29 @@ def ForEachBits(signal):
         for subsig in signal.fields:
             for bits in ForEachBits(signal.fields[subsig]):
                 yield bits
+
+    else:
+        assert False
+
+def ForEachBitsPair(signal_a, signal_b):
+    assert CompareTypespec(signal_a.typespec, signal_b.typespec)
+
+    if signal_a.sigtype == SignalTypes.BITS:
+        yield (signal_a, signal_b)
+
+    elif signal_a.sigtype == SignalTypes.LIST:
+        for i in range(len(signal_a.fields)):
+            subsig_a = signal_a[i]
+            subsig_b = signal_b[i]
+            for pair in ForEachBitsPair(subsig_a, subsig_b):
+                yield pair
+
+    elif signal_a.sigtype == SignalTypes.BUNDLE:
+        for key in signal_a.fields:
+            subsig_a = signal_a.fields[key]
+            subsig_b = signal_b.fields[key]
+            for pair in ForEachBitsPair(subsig_a, subsig_b):
+                yield pair
 
     else:
         assert False

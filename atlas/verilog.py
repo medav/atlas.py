@@ -60,7 +60,7 @@ def VNameStr(item : str):
 def VNameEdge(item : VPosedge):
     return f'posedge(clock)'
 
-def VNameSignal(item : SignalBase):
+def VNameSignal(signal : SignalBase):
     if signal.sigtype == SignalTypes.BUNDLE:
         raise TypeError('Bundles do not have Verilog names')
     elif signal.sigtype == SignalTypes.LIST:
@@ -96,7 +96,6 @@ def VName(item):
             return name_func_map[key](item)
 
     assert False
-
 
 @contextmanager
 def VModule(name : str, io_dict : dict):
@@ -149,7 +148,7 @@ def VAssign(lbits, rbits):
     VAssignRaw(VName(lbits), VName(rbits))
 
 def VConnectRaw(lhs, rhs):
-    VEmitRaw(f'{lhs} <= {rhs};')
+    VEmitRaw(f'{lhs} = {rhs};')
 
 def VConnect(lbits : SignalBase, rhs):
     assert lbits.sigdir != SignalTypes.INPUT
