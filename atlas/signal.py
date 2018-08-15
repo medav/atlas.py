@@ -135,6 +135,13 @@ class BitsSignal(model.BitsSignal):
         block.append(other)
         return self
 
+    def ResetWith(self, reset, reset_value):
+        self.reset = reset
+        self.reset_value = reset_value
+
+    def ClockWith(self, clock):
+        self.clock = clock
+
     def __enter__(self):
         if self.width != 1:
             raise RuntimeError("Conditions must have bitwidth == 1")
@@ -194,6 +201,16 @@ class ListSignal(model.ListSignal):
 
         return self
 
+    def ResetWith(self, reset, reset_value):
+        assert type(reset_value) is list
+        assert len(self.fields) == len(reset_value)
+        for i in range(len(self.fields)):
+            self.fields[i].ResetWith(reset, reset_value[i])
+
+    def ClockWith(self, clock):
+        for i in range(len(self.fields)):
+            self.fields[i].ClockWith(clock)
+
     def __getitem__(self, key):
         if type(key) is int:
             return self.fields[key]
@@ -240,6 +257,16 @@ class BundleSignal(model.BundleSignal):
             assert False
 
         return self
+
+    def ResetWith(self, reset, reset_value):
+        assert type(reset_value) is dict
+        assert set(reset_value.keys()) == set(self.fields.keys())
+        for key in self.fields:
+            self.fields[key].ResetWith(reset, reset_value[key])
+
+    def ClockWith(self, clock):
+        for key in self.fields:
+            self.fields[key].ResetWith(clock)
 
     def __getattr__(self, key):
         return self.fields[key]
@@ -309,17 +336,17 @@ def Wire(typespec):
 def Reg(typespec, clock=None, reset=None, reset_value=None):
     signal = Signal(typespec)
 
-    if clock is not None:
-        signal.clock = clock
-    else:
-        signal.clock = CurrentModule().io.clock
+    if clock is None:
+        clock = CurrentModule().io.clock
 
-    if reset is not None:
-        signal.reset = reset
-    else:
-        signal.reset = CurrentModule().io.reset
+    if reset is None:
+        reset = CurrentModule().io.reset
 
-    signal.reset_value = reset_value
+    if reset_value is not None:
+        signal.ResetWith(reset, reset_value)
+
+    signal.ClockWith(clock)
+
     CurrentModule().signals.append(signal)
     signal <<= signal
     return signal
