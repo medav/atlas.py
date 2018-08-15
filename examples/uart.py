@@ -104,9 +104,6 @@ def UartTransmitter(clock_rate, baud_rate, fifo_depth):
     fifo_ram = Reg([Bits(8) for _ in range(fifo_depth)])
     enq_addr = Reg(Bits(Log2Ceil(fifo_depth)), reset_value=0)
     deq_addr = Reg(Bits(Log2Ceil(fifo_depth)), reset_value=0)
-    enqueue = Wire(Bits(1))
-
-    enqueue <<= 0
 
     data_count = Reg(Bits(fifo_depth + 1), reset_value=0)
     full = Wire(Bits(1))
@@ -122,18 +119,18 @@ def UartTransmitter(clock_rate, baud_rate, fifo_depth):
     dequeue_data <<= fifo_ram[deq_addr]
     io.ready <<= ~full | dequeue
 
-    with ~enqueue & dequeue:
+    with ~io.enqueue & dequeue:
         with ~empty:
             data_count <<= data_count - 1
             deq_addr <<= deq_addr + 1
 
-    with enqueue & ~dequeue:
+    with io.enqueue & ~dequeue:
         with ~full:
             data_count <<= data_count + 1
             enq_addr <<= enq_addr + 1
             fifo_ram[enq_addr] <<= io.enqueue_data
 
-    with enqueue & dequeue:
+    with io.enqueue & dequeue:
         deq_addr <<= deq_addr + 1
         enq_addr <<= enq_addr + 1
         fifo_ram[enq_addr] <<= io.enqueue_data
