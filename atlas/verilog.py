@@ -148,7 +148,7 @@ def VAssign(lbits, rbits):
     VAssignRaw(VName(lbits), VName(rbits))
 
 def VConnectRaw(lhs, rhs):
-    VEmitRaw(f'{lhs} = {rhs};')
+    VEmitRaw(f'{lhs} <= {rhs};')
 
 def VConnect(lbits : SignalBase, rhs):
     assert lbits.sigdir != SignalTypes.INPUT

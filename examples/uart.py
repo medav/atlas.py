@@ -153,6 +153,7 @@ def UartTransmitter(clock_rate, baud_rate, fifo_depth):
     with state == states.start:
         io.uart_tx <<= 0
         with clock_counter > clocks_per_bit:
+            clock_counter <<= 0
             state <<= states.write
 
 
@@ -160,6 +161,7 @@ def UartTransmitter(clock_rate, baud_rate, fifo_depth):
         io.uart_tx <<= tx_buf[bit_counter]
 
         with clock_counter > clocks_per_bit:
+            clock_counter <<= 0
             with bit_counter == 7:
                 state <<= states.stop
             with otherwise:
@@ -174,7 +176,7 @@ def UartTransmitter(clock_rate, baud_rate, fifo_depth):
 
 circuit = Circuit(True, True)
 with circuit:
-    # top = UartReceiver(50000000, 115200, 8)
+    UartReceiver(50000000, 115200, 8)
     top = UartTransmitter(50000000, 115200, 8)
 
 circuit.SetTop(top)
