@@ -36,7 +36,7 @@ class BinaryOperator(op.AtlasOperator):
         self.op1 = op1
         self.verilog_op = verilog_op
 
-        self.RegisterOutput(Signal(Bits(r_width, False)))
+        self.RegisterSignal(Signal(Bits(r_width, False)))
 
     def Declare(self):
         VDeclWire(self.result)
@@ -51,7 +51,7 @@ class NotOperator(op.AtlasOperator):
         assert op0.sigtype == model.SignalTypes.BITS
         super().__init__('not')
         self.op0 = op0
-        self.RegisterOutput(Signal(Bits(op0.width, False)))
+        self.RegisterSignal(Signal(Bits(op0.width, False)))
 
     def Declare(self):
         VDeclWire(self.result)
@@ -66,7 +66,7 @@ class SliceOperator(op.AtlasOperator):
         self.op0 = op0
         self.high = high
         self.low = low
-        self.RegisterOutput(Signal(Bits(high - low + 1, False)))
+        self.RegisterSignal(Signal(Bits(high - low + 1, False)))
 
     def Declare(self):
         VDeclWire(self.result)
@@ -106,7 +106,6 @@ class BitsSignal(model.BitsSignal):
 
         super().__init__(
             name=name,
-            typespec=typespec,
             parent=parent,
             width=typespec['width'],
             signed=typespec['signed'],
@@ -177,7 +176,6 @@ class ListSignal(model.ListSignal):
 
         super().__init__(
             name=name,
-            typespec=typespec,
             parent=parent,
             fields=fields)
 
@@ -232,7 +230,6 @@ class BundleSignal(model.BundleSignal):
 
         super().__init__(
             name=name,
-            typespec=typespec,
             parent=parent,
             fields=fields)
 
@@ -288,17 +285,17 @@ def Signal(typespec, name=None, parent=None):
 def Input(typespec):
     signal = Signal(typespec)
     signal.sigdir = model.SignalTypes.INPUT
-    return signal
+    return (typespec, signal)
 
 def Output(typespec):
     signal = Signal(typespec)
     signal.sigdir = model.SignalTypes.OUTPUT
-    return signal
+    return (typespec, signal)
 
 def Inout(typespec):
     signal = Signal(typespec)
     signal.sigdir = model.SignalTypes.INOUT
-    return signal
+    return (typespec, signal)
 
 def Flip(typespec):
     typespec['flipped'] = True
@@ -309,12 +306,21 @@ class IoBundle(model.IoBundle):
         super().__init__(io_dict=io_dict)
 
         for key in self.io_dict:
-            signal = io_dict[key]
+            signal = io_dict[key][1]
             signal.parent = self
             signal.name = key
 
     def __getattr__(self, key):
-        return self.io_dict[key]
+        return self.io_dict[key][1]
+
+    def DirectionOf(self, key):
+        return self.io_dict[key][1].sigdir
+
+    def __iter__(self):
+        return iter(self.io_dict)
+
+    def TypeSpecOf(self, key):
+        return self.io_dict[key][0]
 
 def Io(io_dict):
     if CurrentCircuit().config.default_clock:

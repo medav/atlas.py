@@ -16,7 +16,8 @@ __all__ = [
     'Log2Floor',
     'Log2Ceil',
     'Cat',
-    'Enum'
+    'Enum',
+    'Instance'
 ]
 
 def Log2Floor(n):
@@ -26,23 +27,23 @@ def Log2Ceil(n):
     return int(math.ceil(math.log2(n)))
 
 class CatOperator(op.AtlasOperator):
-    def __init__(self, signals):
+    def __init__(self, signal_list):
         self.width = 0
 
-        for signal in signals:
+        for signal in signal_list:
             assert signal.sigtype == model.SignalTypes.BITS
             self.width += signal.width
 
         super().__init__('cat')
-        self.signals = signals
-        self.RegisterOutput(Signal(Bits(self.width, False)))
+        self.signal_list = signal_list
+        self.RegisterSignal(Signal(Bits(self.width, False)))
 
     def Declare(self):
         VDeclWire(self.result)
 
     def Synthesize(self):
         catstr = \
-            '{' + ', '.join([VName(signal) for signal in self.signals]) + '}'
+            '{' + ', '.join([VName(signal) for signal in self.signal_list]) + '}'
 
         VAssignRaw(VName(self.result), catstr)
 
@@ -62,3 +63,35 @@ class Enum():
 
     def __getattr__(self, name):
         return self.values[name]
+
+class InstanceOperator(op.AtlasOperator):
+    def __init__(self, module : model.Module):
+        self.module = module
+
+        super().__init__(module.name)
+
+        for io_name in self.module.io:
+            typespec = self.module.io.TypeSpecOf(io_name)
+            signal = Signal(typespec)
+            signal.sigdir = model.flip_map[self.module.io.DirectionOf(io_name)]
+            self.RegisterSignal(signal, io_name)
+            CurrentModule().signals.append(signal)
+
+    def Declare(self):
+        pass
+
+    def Synthesize(self):
+        with VModuleInstance(self.module.name, self.name):
+            lines = []
+            for bits, _ in ForEachIoBits(self.module.io.io_dict):
+                io_name = VName(bits)
+                # TODO: The .replace() here is an ugly hack that should be
+                # fixed eventually.
+                local_name = self.name + '_' + io_name.replace('io_', '')
+                lines.append(f'.{io_name}({local_name})')
+
+            for i in range(len(lines)):
+                VEmitRaw(lines[i] + (',' if (i == len(lines) - 1) else ''))
+
+def Instance(module):
+    return InstanceOperator(module)

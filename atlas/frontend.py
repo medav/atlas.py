@@ -15,7 +15,6 @@ __all__ = [
     'CurrentPredicate',
     'StartCondition',
     'EndCondition',
-    'Instance',
     'RegisterOp',
     'otherwise'
 ]
@@ -94,27 +93,6 @@ def Module(func):
         return m
 
     return ModuleWrapper
-
-instance_id_table = { }
-
-def NewInstanceName(module_name):
-    global instance_id_table
-
-    if module_name in instance_id_table:
-        instance_id_table[module_name] += 1
-        id = instance_id_table[module_name]
-    else:
-        instance_id_table[module_name] = 0
-        id = 0
-
-    return f'{module_name}_inst_{id}'
-
-def Instance(module):
-    assert len(modules) > 0
-    inst_name = NewInstanceName(module.name)
-    inst = model.Instance(copy.deepcopy(module.io), inst_name, module.name)
-    CurrentModule().AddInstance(inst)
-    return inst
 
 def StartCondition(signal):
     global predicate

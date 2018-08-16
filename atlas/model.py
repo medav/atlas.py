@@ -20,7 +20,6 @@ flip_map = {
 @dataclass
 class SignalBase(object):
     name : str = field(default=MISSING)
-    typespec : any = field(default=MISSING, repr=False)
     parent : any = field(default=MISSING, repr=False)
     sigtype : int = field(default=MISSING, repr=False)
     sigdir : int = field(default=SignalTypes.INOUT, repr=False)

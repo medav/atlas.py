@@ -1,30 +1,36 @@
 from . import model
-from .frontend import RegisterOp
+from .frontend import RegisterOp, CurrentModule
 
 from .debug import *
 from .utilities import *
 
-uid = 0
+name_uid_map = {}
 
 def GetUniqueName(opname):
-    global uid
-    uname = f'{opname}_{uid}'
-    uid += 1
-    return uname
+    global name_uid_map
+
+    if opname not in name_uid_map:
+        uid = 0
+        name_uid_map[opname] = uid
+    else:
+        name_uid_map[opname] += 1
+        uid = name_uid_map[opname]
+
+    return f'{opname}_{uid}'
 
 class AtlasOperator(object):
     def __init__(self, opname):
         self.name = GetUniqueName(opname)
-        self.outputs = {}
+        self.signals = {}
         RegisterOp(self)
 
-    def RegisterOutput(self, signal, name='result'):
+    def RegisterSignal(self, signal, name='result'):
         signal.parent = self
         signal.name = name
-        self.outputs[name] = signal
+        self.signals[name] = signal
 
     def __getattr__(self, key):
-        return self.outputs[key]
+        return self.signals[key]
 
     def Declare(self):
         raise NotImplementedError()

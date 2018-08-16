@@ -9,6 +9,7 @@ __all__ = [
     'VPosedge',
     'VName',
     'VModule',
+    'VModuleInstance',
     'VDeclReg',
     'VDeclWire',
     'VAlways',
@@ -126,6 +127,14 @@ def VModule(name : str, io_dict : dict):
     Dedent()
 
     VEmitRaw('endmodule')
+
+@contextmanager
+def VModuleInstance(module_name, instance_name):
+    VEmitRaw(f'{module_name} {instance_name} (')
+    Indent()
+    yield
+    Dedent()
+    VEmitRaw(');')
 
 def VDecl(signal, decltype='wire'):
     for bits in ForEachBits(signal):

@@ -69,15 +69,16 @@ def EmitModule(module):
         for signal in module.signals:
             for bits in ForEachBits(signal):
 
-                if bits.clock is None:
-                    int_bits = CreateIntermediate(bits)
-                    VDeclWire(bits)
-                    VDeclReg(int_bits)
-                    VAssign(bits, int_bits)
-                    signals.append((int_bits, bits.connections))
-                else:
-                    VDeclReg(bits)
-                    signals.append((bits, bits.connections))
+                if len(bits.connections) > 0:
+                    if bits.clock is None:
+                        int_bits = CreateIntermediate(bits)
+                        VDeclWire(bits)
+                        VDeclReg(int_bits)
+                        VAssign(bits, int_bits)
+                        signals.append((int_bits, bits.connections))
+                    else:
+                        VDeclReg(bits)
+                        signals.append((bits, bits.connections))
 
         for op in module.ops:
             op.Declare()

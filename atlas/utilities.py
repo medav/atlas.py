@@ -55,7 +55,7 @@ def ForEachBitsPair(signal_a, signal_b):
 
 def ForEachIoBits(io_dict):
     for key in io_dict:
-        signal = io_dict[key]
+        signal = io_dict[key][1]
         parent_dir = signal.sigdir
         for bits in ForEachBits(signal):
             sigdir = signal.sigdir
