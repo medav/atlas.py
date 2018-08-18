@@ -30,6 +30,7 @@ def EmitCombNode(target, node):
             width=target.width
         )
 
+        VDeclWire(true_node)
         EmitCombNode(true_node, node.true_path)
 
     if type(node.false_path) is not ConnectionTree:
@@ -41,6 +42,7 @@ def EmitCombNode(target, node):
             width=target.width
         )
 
+        VDeclWire(false_node)
         EmitCombNode(false_node, node.false_path)
 
     VAssignRaw(
@@ -114,6 +116,10 @@ def EmitModule(module):
         VEmitRaw('')
 
         VEmitRaw(f'// Connections')
+        for bits, sigdir in ForEachIoBits(module.io.io_dict):
+            if sigdir != SignalTypes.INPUT:
+                EmitComb(bits)
+
         for signal in module.signals:
             for bits in ForEachBits(signal):
                 if bits.clock is None:
