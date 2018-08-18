@@ -13,6 +13,8 @@ __all__ = [
     'CurrentCircuit',
     'CurrentModule',
     'CurrentPredicate',
+    'PrevCondition',
+    'ConnectionContext',
     'StartCondition',
     'EndCondition',
     'RegisterOp',
@@ -21,8 +23,8 @@ __all__ = [
 
 circuit = None
 modules = []
-predicate = []
-prevcondition = None
+context = []
+prevcondition = []
 
 class Circuit(model.Circuit):
     def __init__(self, clock=False, reset=False):
@@ -54,14 +56,45 @@ def CurrentModule():
     return modules[-1]
 
 def CurrentPredicate():
-    global predicate
-    return predicate
+    global context
+    assert len(context) > 0
+    return context[-1]
+
+def PrevCondition():
+    global prevcondition
+    assert prevcondition[-1] is not None
+    return prevcondition[-1]
+
+def SetPrevCondition(signal):
+    global prevcondition
+    assert len(prevcondition) > 0
+    prevcondition[-1] = signal
+
+def PushNewContext():
+    global context
+    global prevcondition
+    assert len(context) == len(prevcondition)
+    context.append([])
+    prevcondition.append(None)
+
+def PopContext():
+    global context
+    global prevcondition
+    assert len(context) == len(prevcondition)
+    assert len(context) > 0
+    context.pop()
+    prevcondition.pop()
+
+@contextmanager
+def ConnectionContext():
+    PushNewContext()
+    yield
+    assert len(CurrentPredicate()) == 0
+    PopContext()
 
 def Module(func):
     def ModuleWrapper(*args, **kwargs):
         global modules
-        global predicate
-        global prevcondition
         global circuit
 
         module_name = func.__name__
@@ -78,16 +111,12 @@ def Module(func):
 
         if m is None:
             modules.append(model.Module(module_name))
-            assert len(predicate) == 0
-            prevcondition = None
 
-            func(*args, **kwargs)
+            with ConnectionContext():
+                func(*args, **kwargs)
 
             assert len(modules) > 0
             m = modules.pop()
-
-            assert len(predicate) == 0
-
             circuit.modules.append(m)
 
         return m
@@ -95,20 +124,14 @@ def Module(func):
     return ModuleWrapper
 
 def StartCondition(signal):
-    global predicate
-    predicate.append((signal, True))
+    CurrentPredicate().append((signal, True))
 
 def ElseCondition():
-    global predicate
-    global prevcondition
-    assert prevcondition is not None
-    predicate.append((prevcondition, False))
+    CurrentPredicate().append((PrevCondition(), False))
 
 def EndCondition():
-    global predicate
-    global prevcondition
-    assert len(predicate) > 0
-    prevcondition = predicate.pop()[0]
+    assert len(CurrentPredicate()) > 0
+    SetPrevCondition(CurrentPredicate().pop()[0])
 
 class OtherwiseObject(object):
     def __init__(self):

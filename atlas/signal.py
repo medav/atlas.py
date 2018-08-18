@@ -76,13 +76,14 @@ class SliceOperator(op.AtlasOperator):
 
 def Mux(list_signal, index_signal):
     result = Wire(Bits(list_signal[0].width))
-    result.name = op.GetUniqueName('mux')
+    result.name = op.AtlasOperator.GetUniqueName('mux')
 
-    result <<= list_signal[0]
+    with ConnectionContext():
+        result <<= list_signal[0]
 
-    for i in range(1, len(list_signal)):
-        with index_signal == i:
-            result <<= list_signal[i]
+        for i in range(1, len(list_signal)):
+            with index_signal == i:
+                result <<= list_signal[i]
 
     return result
 

@@ -4,23 +4,22 @@ from .context import RegisterOp, CurrentModule
 from .debug import *
 from .utilities import *
 
-name_uid_map = {}
-
-def GetUniqueName(opname):
-    global name_uid_map
-
-    if opname not in name_uid_map:
-        uid = 0
-        name_uid_map[opname] = uid
-    else:
-        name_uid_map[opname] += 1
-        uid = name_uid_map[opname]
-
-    return f'{opname}_{uid}'
-
 class AtlasOperator(object):
+    name_uid_map = {}
+
+    @staticmethod
+    def GetUniqueName(opname):
+        if opname not in AtlasOperator.name_uid_map:
+            uid = 0
+            AtlasOperator.name_uid_map[opname] = uid
+        else:
+            AtlasOperator.name_uid_map[opname] += 1
+            uid = AtlasOperator.name_uid_map[opname]
+
+        return f'{opname}_{uid}'
+
     def __init__(self, opname):
-        self.name = GetUniqueName(opname)
+        self.name = AtlasOperator.GetUniqueName(opname)
         self.signals = {}
         RegisterOp(self)
 

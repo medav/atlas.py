@@ -156,13 +156,14 @@ def VAssignRaw(lhs, rhs):
 def VAssign(lbits, rbits):
     VAssignRaw(VName(lbits), VName(rbits))
 
-def VConnectRaw(lhs, rhs):
-    VEmitRaw(f'{lhs} <= {rhs};')
+def VConnectRaw(lhs, rhs, nonblock=True):
+    symbol = '<=' if nonblock else '='
+    VEmitRaw(f'{lhs} {symbol} {rhs};')
 
-def VConnect(lbits : SignalBase, rhs):
+def VConnect(lbits : SignalBase, rhs, nonblock=True):
     assert lbits.sigdir != SignalTypes.INPUT
     assert lbits.sigtype == SignalTypes.BITS
-    VConnectRaw(VName(lbits), VName(rhs))
+    VConnectRaw(VName(lbits), VName(rhs), nonblock)
 
 @contextmanager
 def VAlways(condition_list=None):
