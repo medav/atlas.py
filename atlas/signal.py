@@ -4,7 +4,7 @@ from .utilities import *
 from . import model
 from . import op
 
-from .frontend import *
+from .context import *
 from .typespec import *
 from .verilog import *
 

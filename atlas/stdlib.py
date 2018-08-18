@@ -7,7 +7,7 @@ from .utilities import *
 from . import model
 from . import op
 
-from .frontend import *
+from .context import *
 from .signal import *
 from .verilog import *
 from .typespec import *

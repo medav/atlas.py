@@ -1,5 +1,5 @@
 from . import model
-from .frontend import RegisterOp, CurrentModule
+from .context import RegisterOp, CurrentModule
 
 from .debug import *
 from .utilities import *
