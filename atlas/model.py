@@ -25,6 +25,12 @@ class SignalBase(object):
     sigdir : int = field(default=SignalTypes.INOUT, repr=False)
 
 @dataclass
+class ConnectionTree(object):
+    predicate : any = None
+    true_path : any = None
+    false_path : any = None
+
+@dataclass
 class ConnectionBlock(object):
     predicate : SignalBase = None
     true_block : list = field(default_factory=lambda: [], compare=False, repr=False)

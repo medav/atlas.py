@@ -75,10 +75,12 @@ class SliceOperator(op.AtlasOperator):
         VAssignRaw(VName(self.result), f'{VName(self.op0)}[{self.high}:{self.low}]')
 
 def Mux(list_signal, index_signal):
-    result = Wire(list_signal[0].typespec)
+    result = Wire(Bits(list_signal[0].width))
     result.name = op.GetUniqueName('mux')
 
-    for i in range(len(list_signal)):
+    result <<= list_signal[0]
+
+    for i in range(1, len(list_signal)):
         with index_signal == i:
             result <<= list_signal[i]
 

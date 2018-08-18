@@ -27,7 +27,7 @@ def Gcd(data_width):
         with otherwise:
             b_reg <<= b_reg - a_reg
 
-    io.done <<= (b_reg == Const(0, data_width))
+    io.done <<= (b_reg == 0)
     io.out <<= a_reg
 
     NameSignals(locals())

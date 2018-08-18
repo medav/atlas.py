@@ -16,6 +16,69 @@ def CreateIntermediate(bits):
     int_bits.name = f'{bits.name}_int_'
     return int_bits
 
+
+def BuildConnectionTree(connections):
+    if len(connections) == 0:
+        return None
+
+    #
+    # If the last assignment was un-predicated, all preceding assignments are
+    # ignored by order of precedence, so just return it by itself.
+    #
+
+    if type(connections[-1]) is not ConnectionBlock:
+        return connections[-1]
+
+    #
+    # If the last assignment is predicated with both paths containing non-zero
+    # number of assignments, it's possible that one of the nodes deeper in the
+    # tree hasn't fully filled out it's true / false paths. In order to ensure
+    # correct behavior, the preceding connections in the current context are
+    # promoted one level deeper (connections[:-1] + <true/false>_block).
+    #
+
+    if (len(connections[-1].true_block) > 0) and (len(connections[-1].false_block) > 0):
+        return ConnectionTree(
+            predicate=connections[-1].predicate,
+            true_path=BuildConnectionTree(connections[:-1] + connections[-1].true_block),
+            false_path=BuildConnectionTree(connections[:-1] + connections[-1].false_block))
+
+    #
+    # If the last assignment was predicated but one of the two paths has no
+    # assignments, then defer to previous connections in this block.
+    #
+
+    assert not ((len(connections[-1].true_block) == 0) and (len(connections[-1].false_block) == 0))
+
+    sub_ctree = BuildConnectionTree(connections[:-1])
+
+    if len(connections[-1].true_block) > 0:
+        return ConnectionTree(
+            predicate=connections[-1].predicate,
+            true_path=BuildConnectionTree(connections[:-1] + connections[-1].true_block),
+            false_path=sub_ctree)
+
+    if len(connections[-1].false_block) > 0:
+        return ConnectionTree(
+            predicate=connections[-1].predicate,
+            true_path=sub_ctree,
+            false_path=BuildConnectionTree(connections[:-1] + connections[-1].false_block))
+
+def PrintCTree(ctree, indent=0):
+    def WriteLine(line):
+        print(' |  ' * indent + line)
+
+    if ctree is None:
+        WriteLine('None')
+    elif type(ctree) is not ConnectionTree:
+        WriteLine(VName(ctree))
+    else:
+        WriteLine(f'Predicate: {VName(ctree.predicate)}')
+        WriteLine('True path:')
+        PrintCTree(ctree.true_path, indent + 1)
+        WriteLine('False path:')
+        PrintCTree(ctree.false_path, indent + 1)
+
 def EmitConnections(bits, connections):
     for item in connections:
         if type(item) is ConnectionBlock:
@@ -36,6 +99,12 @@ def EmitConnections(bits, connections):
 
 def EmitComb(bits, connections):
     assert bits.clock is None
+
+    ctree = BuildConnectionTree(connections)
+    print()
+    print(f'ctree for {VName(bits)}')
+    PrintCTree(ctree)
+
     with VAlways():
         EmitConnections(bits, connections)
 
