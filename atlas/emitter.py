@@ -122,10 +122,11 @@ def EmitModule(module):
 
         for signal in module.signals:
             for bits in ForEachBits(signal):
-                if bits.clock is None:
-                    EmitComb(bits)
-                else:
-                    EmitSeq(bits)
+                if len(bits.connections) > 0:
+                    if bits.clock is None:
+                        EmitComb(bits)
+                    else:
+                        EmitSeq(bits)
 
                 VEmitRaw('')
 
