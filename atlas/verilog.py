@@ -96,7 +96,7 @@ def VName(item):
         if isinstance(item, key):
             return name_func_map[key](item)
 
-    assert False
+    assert False, f'Unknown item type: {type(item)}'
 
 @contextmanager
 def VModule(name : str, io_dict : dict):

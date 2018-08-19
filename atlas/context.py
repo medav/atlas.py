@@ -12,6 +12,8 @@ __all__ = [
     'Circuit',
     'CurrentCircuit',
     'CurrentModule',
+    'DefaultClock',
+    'DefaultReset',
     'CurrentPredicate',
     'PrevCondition',
     'ConnectionContext',
@@ -54,6 +56,14 @@ def CurrentModule():
     global modules
     assert len(modules) > 0
     return modules[-1]
+
+def DefaultClock():
+    assert CurrentCircuit().config.default_clock
+    return CurrentModule().io.clock
+
+def DefaultReset():
+    assert CurrentCircuit().config.default_reset
+    return CurrentModule().io.reset
 
 def CurrentPredicate():
     global context

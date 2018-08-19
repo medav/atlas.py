@@ -198,7 +198,7 @@ class ListSignal(model.ListSignal):
                 self.fields[i] <<= other[i]
 
         else:
-            assert False
+            assert False, f'Cannot assign type {type(other)} to ListSignal'
 
         return self
 
@@ -241,20 +241,19 @@ class BundleSignal(model.BundleSignal):
             other = other.rhs
 
         if isinstance(other, model.SignalBase):
-            assert other.sigtype == model.SignalTypes.LIST
-            assert set(self.fields.keys()) == set(other.fields.keys())
+            assert other.sigtype == model.SignalTypes.BUNDLE
+            assert self.fields.keys() == other.fields.keys()
 
             for key in self.fields:
                 self.fields[key] <<= other.fields[key]
 
         elif type(other) is dict:
-            assert set(self.fields.keys()) == set(other.keys())
-
+            assert self.fields.keys() == other.keys()
             for key in self.fields:
                 self.fields[key] <<= other[key]
 
         else:
-            assert False
+            assert False, f'Cannot assign type {type(other)} to BundleSignal'
 
         return self
 
@@ -271,27 +270,6 @@ class BundleSignal(model.BundleSignal):
     def __getattr__(self, key):
         return self.fields[key]
 
-    def __ilshift__(self, other):
-        if isinstance(other, ListIndex):
-            other = other.rhs
-
-        if isinstance(other, model.SignalBase):
-            assert other.sigtype == model.SignalTypes.BUNDLE
-            assert self.fields.keys() == other.fields.keys()
-
-            for key in self.fields:
-                self.fields[key] <<= other.fields[key]
-
-        elif type(other) is dict:
-            assert self.fields.keys() == other.keys()
-            for key in self.fields:
-                self.fields[key] <<= other[key]
-
-        else:
-            assert False
-
-        return self
-
 def Signal(typespec, name=None, parent=None):
     if IsBits(typespec):
         return BitsSignal(typespec, name, parent)
@@ -300,7 +278,7 @@ def Signal(typespec, name=None, parent=None):
     elif type(typespec) is dict:
         return BundleSignal(typespec, name, parent)
     else:
-        assert False
+        assert False, f'Unknown typespec: {typespec}'
 
 def Input(typespec):
     signal = Signal(typespec)

@@ -81,6 +81,12 @@ class InstanceOperator(op.AtlasOperator):
             self.RegisterSignal(signal, io_name)
             CurrentModule().signals.append(signal)
 
+        if CurrentCircuit().config.default_clock:
+            self.clock <<= DefaultClock()
+
+        if CurrentCircuit().config.default_reset:
+            self.reset <<= DefaultReset()
+
     def Declare(self):
         pass
 
@@ -95,7 +101,7 @@ class InstanceOperator(op.AtlasOperator):
                 lines.append(f'.{io_name}({local_name})')
 
             for i in range(len(lines)):
-                VEmitRaw(lines[i] + (',' if (i == len(lines) - 1) else ''))
+                VEmitRaw(lines[i] + (',' if (i < len(lines) - 1) else ''))
 
 def Instance(module):
     return InstanceOperator(module)

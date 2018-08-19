@@ -28,7 +28,7 @@ def ForEachBits(signal):
                 yield bits
 
     else:
-        assert False
+        assert False, f'Unknown signal type: {signal.sigtype}'
 
 def ForEachIoBits(io_dict):
     for key in io_dict:
