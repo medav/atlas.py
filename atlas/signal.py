@@ -266,13 +266,30 @@ class BundleSignal(model.BundleSignal):
 
     def ClockWith(self, clock):
         for key in self.fields:
-            self.fields[key].ResetWith(clock)
+            self.fields[key].ClockWith(clock)
 
     def __getattr__(self, key):
         return self.fields[key]
 
     def __ilshift__(self, other):
-        self.Assign(other)
+        if isinstance(other, ListIndex):
+            other = other.rhs
+
+        if isinstance(other, model.SignalBase):
+            assert other.sigtype == model.SignalTypes.BUNDLE
+            assert self.fields.keys() == other.fields.keys()
+
+            for key in self.fields:
+                self.fields[key] <<= other.fields[key]
+
+        elif type(other) is dict:
+            assert self.fields.keys() == other.keys()
+            for key in self.fields:
+                self.fields[key] <<= other[key]
+
+        else:
+            assert False
+
         return self
 
 def Signal(typespec, name=None, parent=None):

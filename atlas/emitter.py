@@ -111,14 +111,14 @@ def EmitModule(module):
         VEmitRaw(f'// Operator Synthesis')
         for op in module.ops:
             op.Synthesize()
-            VEmitRaw('')
 
         VEmitRaw('')
 
         VEmitRaw(f'// Connections')
         for bits, sigdir in ForEachIoBits(module.io.io_dict):
             if sigdir != SignalTypes.INPUT:
-                EmitComb(bits)
+                if len(bits.connections) > 0:
+                    EmitComb(bits)
 
         for signal in module.signals:
             for bits in ForEachBits(signal):
@@ -127,8 +127,6 @@ def EmitModule(module):
                         EmitComb(bits)
                     else:
                         EmitSeq(bits)
-
-                VEmitRaw('')
 
 def EmitCircuit(circuit, filename='a.v'):
     with VFile(filename):

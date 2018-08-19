@@ -16,6 +16,7 @@ __all__ = [
     'Log2Floor',
     'Log2Ceil',
     'Cat',
+    'Fill',
     'Enum',
     'Instance'
 ]
@@ -49,6 +50,9 @@ class CatOperator(op.AtlasOperator):
 
 def Cat(signals):
     return CatOperator(signals).result
+
+def Fill(val, width):
+    return Cat([val for _ in range(width)])
 
 class Enum():
     def __init__(self, names):

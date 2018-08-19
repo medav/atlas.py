@@ -4,6 +4,10 @@ from .context import RegisterOp, CurrentModule
 from .debug import *
 from .utilities import *
 
+__all__ = [
+    'AtlasOperator'
+]
+
 class AtlasOperator(object):
     name_uid_map = {}
 

@@ -37,7 +37,7 @@ def ForEachIoBits(io_dict):
         for bits in ForEachBits(signal):
             sigdir = signal.sigdir
 
-            if signal.flipped:
+            if bits.flipped:
                 sigdir = flip_map[sigdir]
 
             yield bits, sigdir
@@ -57,6 +57,15 @@ def BuildConnectionTree(connections):
 
     if type(connections[-1]) is not ConnectionBlock:
         return connections[-1]
+
+    #
+    # If there is a single connection in the list and it _is_ a connection
+    # block, then it should have connections in both true and false paths, or
+    # the assignment tree is incomplete (which will result in compilable code).
+    #
+
+    if len(connections) == 1:
+        assert (len(connections[-1].true_block) > 0) and (len(connections[-1].false_block) > 0)
 
     #
     # If the last assignment is predicated with both paths containing non-zero
