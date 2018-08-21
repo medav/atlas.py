@@ -24,6 +24,9 @@ class SignalBase(object):
     sigtype : int = field(default=MISSING, repr=False)
     sigdir : int = field(default=SignalTypes.INOUT, repr=False)
 
+    def __hash__(self):
+        return hash((self.name, self.parent))
+
 @dataclass
 class ConnectionTree(object):
     predicate : any = None
@@ -47,20 +50,32 @@ class BitsSignal(SignalBase):
     reset : any = field(default=None, repr=None)
     reset_value : any = field(default=None, repr=None)
 
+    def __hash__(self):
+        return hash((self.name, self.parent))
+
 @dataclass
 class ListSignal(SignalBase):
     sigtype : int = SignalTypes.LIST
     fields : list = field(default_factory=lambda: [], compare=False, repr=False)
+
+    def __hash__(self):
+        return hash((self.name, self.parent))
 
 @dataclass
 class BundleSignal(SignalBase):
     sigtype : int = SignalTypes.BUNDLE
     fields : dict = field(default_factory=lambda: {}, compare=False, repr=False)
 
+    def __hash__(self):
+        return hash((self.name, self.parent))
+
 @dataclass
 class IoBundle(object):
     io_dict : dict
     name : str = 'io'
+
+    def __hash__(self):
+        return hash(self.name)
 
 @dataclass
 class Module(object):

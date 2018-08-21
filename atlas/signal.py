@@ -26,7 +26,7 @@ class BinaryOperator(op.AtlasOperator):
     def __init__(self, op0, op1, opname, verilog_op, r_width=0):
         assert op0.sigtype == model.SignalTypes.BITS
         assert (type(op1) is int) or (op1.sigtype == model.SignalTypes.BITS)
-        assert (type(op1) is int) or (op0.width == op1.width)
+        # assert (type(op1) is int) or (op0.width == op1.width)
 
         r_width = op0.width if r_width == 0 else r_width
 
@@ -168,7 +168,12 @@ class BitsSignal(model.BitsSignal):
     def __le__(self, other): return BinaryOperator(self, other, 'le', '<=', 1).result
     def __eq__(self, other): return BinaryOperator(self, other, 'eq', '==', 1).result
     def __ne__(self, other): return BinaryOperator(self, other, 'neq', '!=', 1).result
+    def __lshift__(self, other): return BinaryOperator(self, other, 'sll', '<<').result
+    def __rshift__(self, other): return BinaryOperator(self, other, 'srl', '>>').result
     def __invert__(self): return NotOperator(self).result
+
+    def __hash__(self):
+        return hash((self.name, self.parent))
 
 class ListSignal(model.ListSignal):
     def __init__(self, typespec, name=None, parent=None):
@@ -224,6 +229,9 @@ class ListSignal(model.ListSignal):
     def __setitem__(self, key, value):
         pass
 
+    def __hash__(self):
+        return hash((self.name, self.parent))
+
 class BundleSignal(model.BundleSignal):
     def __init__(self, typespec, name=None, parent=None):
         if type(typespec) is not dict:
@@ -269,6 +277,9 @@ class BundleSignal(model.BundleSignal):
 
     def __getattr__(self, key):
         return self.fields[key]
+
+    def __hash__(self):
+        return hash((self.name, self.parent))
 
 def Signal(typespec, name=None, parent=None):
     if IsBits(typespec):

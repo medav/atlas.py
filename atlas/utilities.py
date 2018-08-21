@@ -30,6 +30,11 @@ def ForEachBits(signal):
     else:
         assert False, f'Unknown signal type: {signal.sigtype}'
 
+def ForBitsInModule(module):
+    for signal in module.signals:
+        for bits in ForEachBits(signal):
+            yield bits
+
 def ForEachIoBits(io_dict):
     for key in io_dict:
         signal = io_dict[key][1]

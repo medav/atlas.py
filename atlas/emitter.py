@@ -79,17 +79,23 @@ def EmitSeqConnections(bits, connections=None):
         else:
             VConnect(bits, item)
 
-def EmitSeq(bits):
-    assert bits.clock is not None
+def EmitSeq(module):
+    clocks = set()
 
-    with VAlways([VPosedge(bits.clock)]):
-        if (bits.reset is not None) and (bits.reset_value is not None):
-            with VIf(bits.reset):
-                VConnect(bits, bits.reset_value)
-            with VElse():
-                EmitSeqConnections(bits)
-        else:
-            EmitSeqConnections(bits)
+    for bits in filter(lambda bits: bits.clock is not None, ForBitsInModule(module)):
+        if bits.clock is not None:
+            clocks.add(bits.clock)
+
+    for clock in clocks:
+        with VAlways([VPosedge(clock)]):
+            for bits in filter(lambda bits: bits.clock is clock, ForBitsInModule(module)):
+                if (bits.reset is not None) and (bits.reset_value is not None):
+                    with VIf(bits.reset):
+                        VConnect(bits, bits.reset_value)
+                    with VElse():
+                        EmitSeqConnections(bits)
+                else:
+                    EmitSeqConnections(bits)
 
 def EmitModule(module):
     signals = []
@@ -120,13 +126,20 @@ def EmitModule(module):
                 if len(bits.connections) > 0:
                     EmitComb(bits)
 
+        #
+        # Emit Combinational Connections
+        #
+
         for signal in module.signals:
             for bits in ForEachBits(signal):
-                if len(bits.connections) > 0:
-                    if bits.clock is None:
-                        EmitComb(bits)
-                    else:
-                        EmitSeq(bits)
+                if (len(bits.connections) > 0) and (bits.clock is None):
+                    EmitComb(bits)
+
+        #
+        # Emit Sequential Connections
+        #
+
+        EmitSeq(module)
 
 def EmitCircuit(circuit, filename='a.v'):
     with VFile(filename):
