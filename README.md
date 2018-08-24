@@ -3,6 +3,9 @@
 A Python-based hardware generator framework targeting Verilog
 
 # Installation
+Requirements:
+* [Python 3.7+](https://www.python.org/)
+
 To install, just run:
 ```
 $ python setup.py install
