@@ -1,7 +1,5 @@
 from contextlib import contextmanager
-
-from .model import *
-from .utilities import *
+from ..base import *
 
 __all__ = [
     'VFile',
@@ -50,7 +48,7 @@ def VEmitRaw(line):
 
 @dataclass
 class VPosedge(object):
-    signal : SignalBase
+    signal : any
 
 def VNameInt(item : int):
     return str(item)
@@ -61,34 +59,42 @@ def VNameStr(item : str):
 def VNameEdge(item : VPosedge):
     return f'posedge(clock)'
 
-def VNameSignal(signal : SignalBase):
-    if signal.sigtype == SignalTypes.BUNDLE:
+def VNameSignal(signal):
+    if type(signal) is M.BundleSignal:
         raise TypeError('Bundles do not have Verilog names')
-    elif signal.sigtype == SignalTypes.LIST:
+    elif type(signal) is M.ListSignal:
         raise TypeError('Lists do not have Verilog names')
 
-    if signal.name is None:
+    if signal.meta.name is None:
         raise NameError('Signal must have a name')
 
-    name = signal.name
-    while issubclass(type(signal), SignalBase):
-        signal = signal.parent
+    sigtypes = { M.BitsSignal, M.ListSignal, M.BundleSignal }
 
-        if signal is None:
+    name_parts = [signal.meta.name]
+
+    while type(signal) in sigtypes:
+        if signal.meta.parent is None:
             break
 
-        if signal.name is None:
-            raise NameError('Signal must have a name')
+        signal = signal.meta.parent
 
-        name = f'{signal.name}_{name}'
+        if type(signal) in sigtypes:
+            if signal.meta.name is None:
+                raise NameError('Signal must have a name')
 
-    return name
+            name_parts.append(signal.meta.name)
+        else:
+            name_parts.append(signal.name)
+
+    return '_'.join(reversed(name_parts))
 
 name_func_map = {
     int: VNameInt,
     str: VNameStr,
     VPosedge: VNameEdge,
-    SignalBase: VNameSignal
+    M.BitsSignal: VNameSignal,
+    M.ListSignal: VNameSignal,
+    M.BundleSignal: VNameSignal
 }
 
 def VName(item):
@@ -96,7 +102,7 @@ def VName(item):
         if isinstance(item, key):
             return name_func_map[key](item)
 
-    assert False, f'Unknown item type: {type(item)}'
+    assert False, f'Cannot name item of type: {type(item)}'
 
 @contextmanager
 def VModule(name : str, io_dict : dict):
@@ -160,13 +166,12 @@ def VConnectRaw(lhs, rhs, nonblock=True):
     symbol = '<=' if nonblock else '='
     VEmitRaw(f'{lhs} {symbol} {rhs};')
 
-def VConnect(lbits : SignalBase, rhs, nonblock=True):
-    assert lbits.sigdir != SignalTypes.INPUT
-    assert lbits.sigtype == SignalTypes.BITS
+def VConnect(lbits : M.BitsSignal, rhs, nonblock=True):
+    assert lbits.meta.sigdir != M.SignalTypes.INPUT
     VConnectRaw(VName(lbits), VName(rhs), nonblock)
 
 @contextmanager
-def VAlways(condition_list=None):
+def VAlways(condition_list : list = None):
     if condition_list is None:
         VEmitRaw('always @* begin')
 
@@ -175,7 +180,7 @@ def VAlways(condition_list=None):
 
         for item in condition_list:
             if type(item) is VPosedge:
-                assert item.signal.sigtype == SignalTypes.BITS
+                assert type(item.signal) is M.BitsSignal
                 signal_names.append(f'posedge({VName(item.signal)})')
             else:
                 signal_names += [
@@ -194,8 +199,7 @@ def VAlways(condition_list=None):
     VEmitRaw(f'end')
 
 @contextmanager
-def VIf(bits, invert=False):
-    assert bits.sigtype == SignalTypes.BITS
+def VIf(bits : M.BitsSignal, invert=False):
     assert bits.width == 1
 
     invert_str = '!' if invert else ''

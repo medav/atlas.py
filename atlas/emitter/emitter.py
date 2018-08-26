@@ -1,15 +1,6 @@
-import copy
+from ..base import *
 
-from .debug import *
-from .utilities import *
-
-from .model import *
 from .verilog import *
-
-__all__ = [
-    'EmitModule',
-    'EmitCircuit'
-]
 
 global nodeid
 nodeid = 0
@@ -18,27 +9,31 @@ def NewNodeName():
     global nodeid
     this_id = nodeid
     nodeid += 1
-    return f'N_{this_id}'
+    return f'_NODE_{this_id}'
 
 def EmitCombNode(target, node):
-    if type(node.true_path) is not ConnectionTree:
+    if type(node.true_path) is not M.ConnectionTree:
         true_node = node.true_path
     else:
-        true_node = BitsSignal(
-            name=NewNodeName(),
-            parent=None,
+        true_node = M.BitsSignal(
+            M.SignalMeta(
+                name=NewNodeName(),
+                parent=None,
+            ),
             width=target.width
         )
 
         VDeclWire(true_node)
         EmitCombNode(true_node, node.true_path)
 
-    if type(node.false_path) is not ConnectionTree:
+    if type(node.false_path) is not M.ConnectionTree:
         false_node = node.false_path
     else:
-        false_node = BitsSignal(
-            name=NewNodeName(),
-            parent=None,
+        false_node = M.BitsSignal(
+            M.SignalMeta(
+                name=NewNodeName(),
+                parent=None,
+            ),
             width=target.width
         )
 
@@ -53,7 +48,7 @@ def EmitComb(bits):
     assert bits.clock is None
     ctree = BuildConnectionTree(bits.connections)
 
-    if type(ctree) is ConnectionTree:
+    if type(ctree) is M.ConnectionTree:
         EmitCombNode(bits, ctree)
     else:
         VAssignRaw(VName(bits), VName(ctree))
@@ -63,7 +58,7 @@ def EmitSeqConnections(bits, connections=None):
         connections = bits.connections
 
     for item in connections:
-        if type(item) is ConnectionBlock:
+        if type(item) is M.ConnectionBlock:
 
             if len(item.true_block) > 0:
                 with VIf(item.predicate):
@@ -122,7 +117,7 @@ def EmitModule(module):
 
         VEmitRaw(f'// Connections')
         for bits, sigdir in ForEachIoBits(module.io.io_dict):
-            if sigdir != SignalTypes.INPUT:
+            if sigdir != M.SignalTypes.INPUT:
                 if len(bits.connections) > 0:
                     EmitComb(bits)
 

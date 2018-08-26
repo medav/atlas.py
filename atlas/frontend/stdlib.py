@@ -1,25 +1,11 @@
 import math
 from contextlib import contextmanager
 
-from .debug import *
-from .utilities import *
-
-from . import model
-from . import op
+from ..base import *
 
 from .context import *
-from .signal import *
-from .verilog import *
-from .typespec import *
-
-__all__ = [
-    'Log2Floor',
-    'Log2Ceil',
-    'Cat',
-    'Fill',
-    'Enum',
-    'Instance'
-]
+from .frontend import *
+from .signals import *
 
 def Log2Floor(n):
     return int(math.floor(math.log2(n)))
@@ -27,26 +13,28 @@ def Log2Floor(n):
 def Log2Ceil(n):
     return int(math.ceil(math.log2(n)))
 
-class CatOperator(op.AtlasOperator):
+class CatOperator(Operator):
     def __init__(self, signal_list):
         self.width = 0
 
+        signal_list = list(map(FilterRvalue, signal_list))
+
         for signal in signal_list:
-            assert signal.sigtype == model.SignalTypes.BITS
+            assert type(signal) is M.BitsSignal
             self.width += signal.width
 
         super().__init__('cat')
         self.signal_list = signal_list
-        self.RegisterSignal(Signal(Bits(self.width, False)))
+        self.result = CreateSignal(Bits(self.width, False), 'result', self)
 
     def Declare(self):
-        VDeclWire(self.result)
+        VDeclWire(self.result.signal)
 
     def Synthesize(self):
         catstr = \
             '{' + ', '.join([VName(signal) for signal in self.signal_list]) + '}'
 
-        VAssignRaw(VName(self.result), catstr)
+        VAssignRaw(VName(self.result.signal), catstr)
 
 def Cat(signals):
     return CatOperator(signals).result
@@ -68,7 +56,7 @@ class Enum():
     def __getattr__(self, name):
         return self.values[name]
 
-class InstanceOperator(op.AtlasOperator):
+class InstanceOperator(Operator):
     def __init__(self, module : model.Module):
         self.module = module
 

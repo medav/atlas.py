@@ -1,52 +1,26 @@
 from contextlib import contextmanager
-import copy
 from hashlib import sha256
 
-from .debug import *
-from .utilities import *
-
-from . import model
-
-__all__ = [
-    'Module',
-    'Circuit',
-    'CurrentCircuit',
-    'CurrentModule',
-    'DefaultClock',
-    'DefaultReset',
-    'CurrentPredicate',
-    'PrevCondition',
-    'ConnectionContext',
-    'StartCondition',
-    'EndCondition',
-    'RegisterOp',
-    'otherwise'
-]
+from ..base import *
 
 circuit = None
 modules = []
 context = []
 prevcondition = []
 
-class Circuit(model.Circuit):
-    def __init__(self, clock=False, reset=False):
-        config = model.CircuitConfig(clock, reset)
-        model.Circuit.__init__(self, 'top', config=config)
+def Circuit(name : str, default_clock=False, default_reset=False):
+    return M.Circuit(name, M.CircuitConfig(default_clock, default_reset))
 
-    def SetTop(self, module):
-        assert module in self.modules
-        self.top = module
+@contextmanager
+def Context(_circuit : M.Circuit):
+    global circuit
+    assert circuit is None
+    circuit = _circuit
 
-    def __enter__(self):
-        global circuit
-        assert circuit is None
-        circuit = self
-        return self
+    yield
 
-    def __exit__(self, *kwargs):
-        global circuit
-        assert circuit == self
-        circuit = None
+    assert circuit == _circuit
+    circuit = None
 
 def CurrentCircuit():
     global circuit
@@ -158,3 +132,5 @@ otherwise = OtherwiseObject()
 def RegisterOp(aop):
     CurrentModule().ops.append(aop)
     return aop
+
+HookRegisterOp(RegisterOp)

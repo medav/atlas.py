@@ -1,34 +1,28 @@
-from .model import *
+from . import model as M
 from .typespec import *
 
 dirstr_map = {
-    SignalTypes.INPUT: 'input',
-    SignalTypes.OUTPUT: 'output',
-    SignalTypes.INOUT: 'inout',
-}
-
-typestr_map = {
-    SignalTypes.BITS: 'bits',
-    SignalTypes.LIST: 'list',
-    SignalTypes.BUNDLE: 'bundle'
+    M.SignalTypes.INPUT: 'input',
+    M.SignalTypes.OUTPUT: 'output',
+    M.SignalTypes.INOUT: 'inout',
 }
 
 def ForEachBits(signal):
-    if signal.sigtype == SignalTypes.BITS:
+    if type(signal) is M.BitsSignal:
         yield signal
 
-    elif signal.sigtype == SignalTypes.LIST:
+    elif type(signal) is M.ListSignal:
         for subsig in signal.fields:
             for bits in ForEachBits(subsig):
                 yield bits
 
-    elif signal.sigtype == SignalTypes.BUNDLE:
+    elif type(signal) is M.BundleSignal:
         for subsig in signal.fields:
             for bits in ForEachBits(signal.fields[subsig]):
                 yield bits
 
     else:
-        assert False, f'Unknown signal type: {signal.sigtype}'
+        assert False, f'Unknown signal type: {type(signal)}'
 
 def ForBitsInModule(module):
     for signal in module.signals:
@@ -37,15 +31,41 @@ def ForBitsInModule(module):
 
 def ForEachIoBits(io_dict):
     for key in io_dict:
-        signal = io_dict[key][1]
-        parent_dir = signal.sigdir
+        signal = io_dict[key]
+        parent_dir = signal.meta.sigdir
         for bits in ForEachBits(signal):
-            sigdir = signal.sigdir
+            sigdir = signal.meta.sigdir
 
             if bits.flipped:
                 sigdir = flip_map[sigdir]
 
             yield bits, sigdir
+
+def InsertConnection(lhs, predicate, rhs):
+    """Insert a predicated connection into a signal's connection list
+
+    This is done by walking through the current predicate and producing
+    connection blocks in this signal's ast until a point is reached where this
+    connection can be inserted.
+    """
+
+    assert type(lhs) is M.BitsSignal
+    assert (type(rhs) is M.BitsSignal) or (type(rhs) is int)
+
+    block = lhs.connections
+
+    for (signal, path) in predicate:
+        if (len(block) > 0) and \
+            (type(block[-1]) is M.ConnectionBlock) and \
+            (block[-1].predicate is signal):
+
+            block = block[-1].true_block if path else block[-1].false_block
+        else:
+            cb = M.ConnectionBlock(signal)
+            block.append(cb)
+            block = cb.true_block if path else cb.false_block
+
+    block.append(rhs)
 
 def BuildConnectionTree(connections):
     """Build a binary tree of connections based off a connection AST.
@@ -60,7 +80,7 @@ def BuildConnectionTree(connections):
     # ignored by order of precedence, so just return it by itself.
     #
 
-    if type(connections[-1]) is not ConnectionBlock:
+    if type(connections[-1]) is not M.ConnectionBlock:
         return connections[-1]
 
     #
@@ -70,7 +90,8 @@ def BuildConnectionTree(connections):
     #
 
     if len(connections) == 1:
-        assert (len(connections[-1].true_block) > 0) and (len(connections[-1].false_block) > 0)
+        assert (len(connections[-1].true_block) > 0) and \
+            (len(connections[-1].false_block) > 0)
 
     #
     # If the last assignment is predicated with both paths containing non-zero
@@ -80,32 +101,41 @@ def BuildConnectionTree(connections):
     # promoted one level deeper (connections[:-1] + <true/false>_block).
     #
 
-    if (len(connections[-1].true_block) > 0) and (len(connections[-1].false_block) > 0):
-        return ConnectionTree(
+    if (len(connections[-1].true_block) > 0) and \
+        (len(connections[-1].false_block) > 0):
+
+        return M.ConnectionTree(
             predicate=connections[-1].predicate,
-            true_path=BuildConnectionTree(connections[:-1] + connections[-1].true_block),
-            false_path=BuildConnectionTree(connections[:-1] + connections[-1].false_block))
+            true_path=BuildConnectionTree(
+                connections[:-1] + connections[-1].true_block),
+
+            false_path=BuildConnectionTree(
+                connections[:-1] + connections[-1].false_block))
 
     #
     # If the last assignment was predicated but one of the two paths has no
     # assignments, then defer to previous connections in this block.
     #
 
-    assert not ((len(connections[-1].true_block) == 0) and (len(connections[-1].false_block) == 0))
+    assert not ((len(connections[-1].true_block) == 0) and \
+        (len(connections[-1].false_block) == 0))
 
     sub_ctree = BuildConnectionTree(connections[:-1])
 
     if len(connections[-1].true_block) > 0:
-        return ConnectionTree(
+        return M.ConnectionTree(
             predicate=connections[-1].predicate,
-            true_path=BuildConnectionTree(connections[:-1] + connections[-1].true_block),
+            true_path=BuildConnectionTree(
+                connections[:-1] + connections[-1].true_block),
+
             false_path=sub_ctree)
 
     if len(connections[-1].false_block) > 0:
-        return ConnectionTree(
+        return M.ConnectionTree(
             predicate=connections[-1].predicate,
             true_path=sub_ctree,
-            false_path=BuildConnectionTree(connections[:-1] + connections[-1].false_block))
+            false_path=BuildConnectionTree(
+                connections[:-1] + connections[-1].false_block))
 
 def PrintCTree(ctree, indent=0):
     def WriteLine(line):
@@ -113,7 +143,7 @@ def PrintCTree(ctree, indent=0):
 
     if ctree is None:
         WriteLine('None')
-    elif type(ctree) is not ConnectionTree:
+    elif type(ctree) is not M.ConnectionTree:
         WriteLine(str(ctree))
     else:
         WriteLine(f'Predicate: {ctree.predicate.name}')

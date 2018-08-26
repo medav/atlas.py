@@ -20,8 +20,14 @@ def UartReceiver(clock_rate, baud_rate, fifo_depth):
 
     fifo_bits = 1 if fifo_depth == 1 else Log2Ceil(fifo_depth)
 
-    data_reg = Reg([Bits(1) for _ in range(8)])
-    fifo_ram = Reg([Bits(8) for _ in range(fifo_depth)])
+    data_reg = Reg(
+        [Bits(1) for _ in range(8)],
+        reset_value=[0 for _ in range(8)])
+
+    fifo_ram = Reg(
+        [Bits(8) for _ in range(fifo_depth)],
+        reset_value=[0 for _ in range(fifo_depth)])
+
     enq_addr = Reg(Bits(fifo_bits), reset_value=0)
     deq_addr = Reg(Bits(fifo_bits), reset_value=0)
     enqueue = Wire(Bits(1))
@@ -174,11 +180,10 @@ def UartTransmitter(clock_rate, baud_rate, fifo_depth):
     NameSignals(locals())
 
 
-circuit = Circuit(True, True)
-with circuit:
-    UartReceiver(50000000, 115200, 8)
-    top = UartTransmitter(50000000, 115200, 8)
+circuit = Circuit('uart', True, True)
 
-circuit.SetTop(top)
+with Context(circuit):
+    UartReceiver(50000000, 115200, 8)
+    circuit.top = UartTransmitter(50000000, 115200, 8)
 
 EmitCircuit(circuit, 'test/uart.v')

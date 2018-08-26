@@ -32,10 +32,11 @@ def Gcd(data_width):
 
     NameSignals(locals())
 
-circuit = Circuit(True, True)
-with circuit:
+circuit = Circuit('gcd', True, True)
+
+with Context(circuit):
     top = Gcd(64)
 
-circuit.SetTop(top)
+circuit.top = top
 
 EmitCircuit(circuit, 'test/gcd.v')

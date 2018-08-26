@@ -1,10 +1,6 @@
 from dataclasses import dataclass
 
-__all__ = [
-    'Bits',
-    'IsBits',
-    'CompareTypespec'
-]
+from . import model as M
 
 def Bits(width, signed=False, flipped=False):
     return {
@@ -44,3 +40,20 @@ def CompareTypespec(type1, type2):
             map(
                 lambda x: CompareTypespec(x[0], x[1]),
                 ((type1[key], type2[key]) for key in type1)))
+
+def TypespecOf(signal):
+    """Reproduce a typespec for a given signal."""
+
+    if type(signal) is M.BitsSignal:
+        return Bits(signal.width, signal.signed, signal.flipped)
+
+    elif type(signal) is M.ListSignal:
+        return [
+            TypespecOf(signal.fields[0]) for _ in range(len(signal.fields))
+        ]
+
+    elif type(signal) is M.BundleSignal:
+        return { key: TypespecOf(signal.fields[key]) for key in signal.fields }
+
+    else:
+        assert False, f'Unknown signal type: {type(signal)}'

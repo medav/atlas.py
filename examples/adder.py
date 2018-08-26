@@ -31,10 +31,11 @@ def RippleAdder(n):
 
     NameSignals(locals())
 
-circuit = Circuit()
-with circuit:
-    top = RippleAdder(64)
+circuit = Circuit('adder')
 
-circuit.SetTop(top)
+with Context(circuit):
+    top = RippleAdder(4)
+
+circuit.top = top
 
 EmitCircuit(circuit, 'test/adder.v')

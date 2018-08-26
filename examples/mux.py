@@ -19,9 +19,10 @@ def Mux(n=8):
 
     NameSignals(locals())
 
-circuit = Circuit()
-with circuit:
-    top = Mux()
+circuit = Circuit('mux')
 
-circuit.SetTop(top)
-EmitCircuit(circuit)
+with Context(circuit):
+    top = Mux()
+    circuit.top = Mux()
+
+EmitCircuit(circuit, 'test/mux.v')
