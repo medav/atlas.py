@@ -105,13 +105,13 @@ def VName(item):
     assert False, f'Cannot name item of type: {type(item)}'
 
 @contextmanager
-def VModule(name : str, io_dict : dict):
+def VModule(name : str, io : M.BundleSignal):
     VEmitRaw(f'module {name} (')
     Indent()
 
     io_lines = []
 
-    for bits, sigdir in ForEachIoBits(io_dict):
+    for bits, sigdir in ForEachIoBits(io):
         dirstr = dirstr_map[sigdir]
         if bits.width == 1:
             io_lines.append(f'{dirstr} {VName(bits)}')

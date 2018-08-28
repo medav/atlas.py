@@ -24,14 +24,40 @@ def ForEachBits(signal):
     else:
         assert False, f'Unknown signal type: {type(signal)}'
 
+def ZipBits(sig_a, sig_b):
+    if type(sig_a) is M.BitsSignal:
+        assert type(sig_b) is M.BitsSignal
+        assert sig_a.width == sig_b.width
+
+        yield (sig_a, sig_b)
+
+    elif type(sig_a) is M.ListSignal:
+        assert type(sig_b) is M.ListSignal
+        assert len(sig_a.fields) == len(sig_b.fields)
+
+        for i in range(len(sig_a.fields)):
+            for pair in ZipBits(sig_a.fields[i], sig_b.fields[i]):
+                yield pair
+
+    elif type(signal) is M.BundleSignal:
+        assert type(sig_b) is M.BundleSignal
+        assert sig_a.fields.keys() == sig_b.fields.keys()
+
+        for key in sig_a.fields:
+            for pair in ZipBits(sig_a.fields[key], sig_b.fields[key]):
+                yield pair
+
+    else:
+        assert False, f'Unknown signal type: {type(signal)}'
+
 def ForBitsInModule(module):
     for signal in module.signals:
         for bits in ForEachBits(signal):
             yield bits
 
-def ForEachIoBits(io_dict):
-    for key in io_dict:
-        signal = io_dict[key]
+def ForEachIoBits(io : M.BundleSignal):
+    for key in io.fields:
+        signal = io.fields[key]
         parent_dir = signal.meta.sigdir
         for bits in ForEachBits(signal):
             sigdir = signal.meta.sigdir

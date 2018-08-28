@@ -8,21 +8,21 @@ from .frontend import *
 
 def Input(typespec):
     """Produce a signal marked as Input."""
-    wrapper = CreateSignal(typespec)
-    wrapper.signal.meta.sigdir = M.SignalTypes.INPUT
-    return wrapper
+    signal = CreateSignal(typespec, frontend=False)
+    signal.meta.sigdir = M.SignalTypes.INPUT
+    return signal
 
 def Output(typespec):
     """Produce a signal marked as Output."""
-    wrapper = CreateSignal(typespec)
-    wrapper.signal.meta.sigdir = M.SignalTypes.OUTPUT
-    return wrapper
+    signal = CreateSignal(typespec, frontend=False)
+    signal.meta.sigdir = M.SignalTypes.OUTPUT
+    return signal
 
 def Inout(typespec):
     """Produce a signal marked as Inout."""
-    wrapper = CreateSignal(typespec)
-    wrapper.signal.sigdir = M.SignalTypes.INOUT
-    return wrapper
+    signal = CreateSignal(typespec, frontend=False)
+    signal.sigdir = M.SignalTypes.INOUT
+    return signal
 
 def Flip(typespec):
     """Mark a typespec as flipped.
@@ -34,34 +34,8 @@ def Flip(typespec):
     typespec['flipped'] = True
     return typespec
 
-class IoBundle(M.IoBundle):
-    def __init__(self, io_dict):
-        self.wrap_fields = io_dict
-
-        super().__init__(io_dict={
-            key:io_dict[key].signal
-            for key in io_dict
-        })
-
-        for key in self.io_dict:
-            signal = self.io_dict[key]
-            signal.meta.parent = self
-            signal.meta.name = key
-
-    def __getattr__(self, key):
-        return self.wrap_fields[key]
-
-    def DirectionOf(self, key):
-        return self.wrap_fields[key].signal.meta.sigdir
-
-    def __iter__(self):
-        return iter(self.wrap_fields)
-
-    def TypespecOf(self, key):
-        return TypespecOf(self.wrap_fields[key].signal)
-
 def Io(io_dict):
-    """Produce an IoBundle based on the input io_dict."""
+    """Produce an Io Bundle based on the input io_dict."""
 
     #
     # If the current circuit config specifies default clock and reset. Add them
@@ -74,10 +48,13 @@ def Io(io_dict):
     if CurrentCircuit().config.default_reset:
         io_dict['reset'] = Input(Bits(1))
 
-    io = IoBundle(io_dict)
-    io.parent = CurrentModule()
+    io = M.BundleSignal(
+        M.SignalMeta('io', None),
+        fields=io_dict
+    )
+
     CurrentModule().io = io
-    return io
+    return WrapSignal(io)
 
 def Wire(typespec):
     """Produce a wire signal based on the given typespec."""

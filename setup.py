@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name = 'atlas',
-    packages = ['atlas'],
+    packages = ['atlas', 'atlas.base', 'atlas.frontend', 'atlas.emitter'],
     version = '0.1',
     description = 'Python Hardware Generator Framework Targetting Verilog',
     author = 'Michael Davies',

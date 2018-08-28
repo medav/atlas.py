@@ -57,36 +57,42 @@ class Enum():
         return self.values[name]
 
 class InstanceOperator(Operator):
-    def __init__(self, module : model.Module):
+    def __init__(self, module : M.Module):
         self.module = module
-
         super().__init__(module.name)
+        typespec = TypespecOf(self.module.io)
+        self.io_bundle = CreateSignal(typespec, self.name)
 
-        for io_name in self.module.io:
-            typespec = self.module.io.TypeSpecOf(io_name)
-            signal = Signal(typespec)
-            signal.sigdir = model.flip_map[self.module.io.DirectionOf(io_name)]
-            self.RegisterSignal(signal, io_name)
-            CurrentModule().signals.append(signal)
+        for io_name in self.io_bundle.signal.fields:
+            signal = self.io_bundle.signal.fields[io_name]
+            signal.meta.sigdir = M.flip_map(signal.meta.sigdir)
+
+        CurrentModule().signals.append(self.io_bundle)
 
         if CurrentCircuit().config.default_clock:
-            self.clock <<= DefaultClock()
+            self.io_bundle.clock <<= DefaultClock()
 
         if CurrentCircuit().config.default_reset:
-            self.reset <<= DefaultReset()
+            self.io_bundle.reset <<= DefaultReset()
+
+    def __getattr__(self, key):
+        return self.io_bundle.__getattr__(key)
 
     def Declare(self):
+
+        #
+        # N.B. Because all signals from an instance are added to the module's
+        # signal list, they will be declared with the rest of the signals in
+        # the module.
+        #
+
         pass
 
     def Synthesize(self):
         with VModuleInstance(self.module.name, self.name):
             lines = []
-            for bits, _ in ForEachIoBits(self.module.io.io_dict):
-                io_name = VName(bits)
-                # TODO: The .replace() here is an ugly hack that should be
-                # fixed eventually.
-                local_name = self.name + '_' + io_name.replace('io_', '')
-                lines.append(f'.{io_name}({local_name})')
+            for (iobits, intbits) in ZipBits(self.module.io, self.io_bundle):
+                lines.append(f'.{VName(iobits)}({VName(intbits)})')
 
             for i in range(len(lines)):
                 VEmitRaw(lines[i] + (',' if (i < len(lines) - 1) else ''))
