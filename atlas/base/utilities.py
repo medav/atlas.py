@@ -39,7 +39,7 @@ def ZipBits(sig_a, sig_b):
             for pair in ZipBits(sig_a.fields[i], sig_b.fields[i]):
                 yield pair
 
-    elif type(signal) is M.BundleSignal:
+    elif type(sig_a) is M.BundleSignal:
         assert type(sig_b) is M.BundleSignal
         assert sig_a.fields.keys() == sig_b.fields.keys()
 
@@ -55,15 +55,15 @@ def ForBitsInModule(module):
         for bits in ForEachBits(signal):
             yield bits
 
-def ForEachIoBits(io : M.BundleSignal):
-    for key in io.fields:
-        signal = io.fields[key]
+def ForEachIoBits(io_dict : dict):
+    for key in io_dict:
+        signal = io_dict[key]
         parent_dir = signal.meta.sigdir
         for bits in ForEachBits(signal):
             sigdir = signal.meta.sigdir
 
             if bits.flipped:
-                sigdir = flip_map[sigdir]
+                sigdir = M.flip_map[sigdir]
 
             yield bits, sigdir
 

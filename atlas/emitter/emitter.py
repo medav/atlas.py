@@ -95,7 +95,7 @@ def EmitSeq(module):
 def EmitModule(module):
     signals = []
 
-    with VModule(module.name, module.io):
+    with VModule(module.name, module.io_dict):
         VEmitRaw('// Internal Signal Declarations')
         for signal in module.signals:
             for bits in ForEachBits(signal):
@@ -116,7 +116,7 @@ def EmitModule(module):
         VEmitRaw('')
 
         VEmitRaw(f'// Connections')
-        for bits, sigdir in ForEachIoBits(module.io):
+        for bits, sigdir in ForEachIoBits(module.io_dict):
             if sigdir != M.SignalTypes.INPUT:
                 if len(bits.connections) > 0:
                     EmitComb(bits)

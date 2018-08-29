@@ -35,6 +35,9 @@ class SignalFrontend(object):
 
         raise NotImplementedError()
 
+    def __getattr__(self, key):
+        return self.signal.__getattribute__(key)
+
     @staticmethod
     def GetConnection(other, this_type, const_type):
         other = FilterRvalue(other)
@@ -188,7 +191,9 @@ def Mux(list_signal, index_signal):
 
     result = CreateSignal(
         Bits(list_signal[0].signal.width),
-        Operator.GetUniqueName('mux'))
+        name=Operator.GetUniqueName('mux'))
+
+    CurrentModule().signals.append(result.signal)
 
     #
     # The ConnectionContext() context manager pushes a new predicate context
@@ -241,6 +246,7 @@ class BitsFrontend(SignalFrontend):
     """Wrapper class for a M.BitsSignal that adds frontend functionality."""
 
     def __init__(self, signal):
+        assert type(signal) is M.BitsSignal
         super().__init__(signal)
 
     def __ilshift__(self, other):
@@ -303,6 +309,7 @@ class ListFrontend(SignalFrontend):
     """Wrapper class for a M.ListSignal that adds frontend functionality."""
 
     def __init__(self, signal):
+        assert type(signal) is M.ListSignal
         super().__init__(signal)
         self.wrap_fields = [
             WrapSignal(signal) for signal in self.signal.fields
@@ -349,9 +356,10 @@ class ListFrontend(SignalFrontend):
 
 class BundleFrontend(SignalFrontend):
     def __init__(self, signal):
+        assert type(signal) is M.BundleSignal
         super().__init__(signal)
         self.wrap_fields = {
-            WrapSignal(self.signal.fields[key]) for key in self.signal.fields
+            key:WrapSignal(self.signal.fields[key]) for key in self.signal.fields
         }
 
     def __ilshift__(self, other):
@@ -376,19 +384,29 @@ class BundleFrontend(SignalFrontend):
         """Set the reset signal and value for this signal's children."""
 
         assert type(reset_value) is dict
-        assert set(reset_value.keys()) == set(self.fields.keys())
+        assert set(reset_value.keys()) == set(self.wrap_fields.keys())
 
-        for key in self.fields:
+        for key in self.wrap_fields:
             self.wrap_fields[key].ResetWith(reset, reset_value[key])
 
     def ClockWith(self, clock):
         """Set the clock signal for this signal's children"""
 
-        for key in self.fields:
+        for key in self.wrap_fields:
             self.wrap_fields[key].ClockWith(clock)
 
     def __getattr__(self, key):
         return self.wrap_fields[key]
+
+class IoFrontend():
+    def __init__(self, io_dict):
+        self.io_dict = {
+            key:WrapSignal(io_dict[key])
+            for key in io_dict
+        }
+
+    def __getattr__(self, key):
+        return self.io_dict[key]
 
 #
 # Common routines to produce signals and wrap them with frontend classes.

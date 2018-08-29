@@ -146,16 +146,6 @@ class BundleSignal(object):
         return hash(self.meta)
 
 @dataclass
-class IoBundle(object):
-    """A bundle of IO signals."""
-
-    io_dict : dict
-    name : str = 'io'
-
-    def __hash__(self):
-        return hash(self.name)
-
-@dataclass
 class Module(object):
     """A Hardware Module
 
@@ -166,7 +156,7 @@ class Module(object):
 
     name : str
 
-    io : dict = field(default=None, compare=False)
+    io_dict : dict = field(default=None, compare=False)
     instances : dict = field(default_factory=dict, compare=False, repr=False)
     signals : list = field(default_factory=list, compare=False, repr=False)
     ops : list = field(default_factory=list, compare=False, repr=False)

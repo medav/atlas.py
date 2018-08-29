@@ -33,11 +33,11 @@ def CurrentModule():
 
 def DefaultClock():
     assert CurrentCircuit().config.default_clock
-    return CurrentModule().io.clock
+    return CurrentModule().io_dict['clock']
 
 def DefaultReset():
     assert CurrentCircuit().config.default_reset
-    return CurrentModule().io.reset
+    return CurrentModule().io_dict['reset']
 
 def CurrentPredicate():
     global context

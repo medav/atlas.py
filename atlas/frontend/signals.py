@@ -48,13 +48,12 @@ def Io(io_dict):
     if CurrentCircuit().config.default_reset:
         io_dict['reset'] = Input(Bits(1))
 
-    io = M.BundleSignal(
-        M.SignalMeta('io', None),
-        fields=io_dict
-    )
+    for io_name in io_dict:
+        io_dict[io_name].meta.name = io_name
+        io_dict[io_name].meta.parent = 'io'
 
-    CurrentModule().io = io
-    return WrapSignal(io)
+    CurrentModule().io_dict = io_dict
+    return IoFrontend(io_dict)
 
 def Wire(typespec):
     """Produce a wire signal based on the given typespec."""

@@ -83,6 +83,8 @@ def VNameSignal(signal):
                 raise NameError('Signal must have a name')
 
             name_parts.append(signal.meta.name)
+        elif type(signal) is str:
+            name_parts.append(signal)
         else:
             name_parts.append(signal.name)
 
@@ -105,13 +107,13 @@ def VName(item):
     assert False, f'Cannot name item of type: {type(item)}'
 
 @contextmanager
-def VModule(name : str, io : M.BundleSignal):
+def VModule(name : str, io_dict : dict):
     VEmitRaw(f'module {name} (')
     Indent()
 
     io_lines = []
 
-    for bits, sigdir in ForEachIoBits(io):
+    for bits, sigdir in ForEachIoBits(io_dict):
         dirstr = dirstr_map[sigdir]
         if bits.width == 1:
             io_lines.append(f'{dirstr} {VName(bits)}')

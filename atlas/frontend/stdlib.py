@@ -58,25 +58,27 @@ class Enum():
 
 class InstanceOperator(Operator):
     def __init__(self, module : M.Module):
-        self.module = module
         super().__init__(module.name)
-        typespec = TypespecOf(self.module.io)
-        self.io_bundle = CreateSignal(typespec, self.name)
 
-        for io_name in self.io_bundle.signal.fields:
-            signal = self.io_bundle.signal.fields[io_name]
-            signal.meta.sigdir = M.flip_map(signal.meta.sigdir)
+        self.module = module
+        self.io_bundle = {}
+        self.io_map = {}
 
-        CurrentModule().signals.append(self.io_bundle)
+        for io_name in self.module.io_dict:
+            typespec = TypespecOf(self.module.io_dict[io_name])
+            signal = CreateSignal(typespec, io_name, self)
+            signal.signal.meta.sigdir = M.flip_map[signal.signal.meta.sigdir]
+            CurrentModule().signals.append(signal.signal)
+            self.io_bundle[io_name] = signal
 
         if CurrentCircuit().config.default_clock:
-            self.io_bundle.clock <<= DefaultClock()
+            self.io_bundle['clock'] <<= DefaultClock()
 
         if CurrentCircuit().config.default_reset:
-            self.io_bundle.reset <<= DefaultReset()
+            self.io_bundle['reset'] <<= DefaultReset()
 
     def __getattr__(self, key):
-        return self.io_bundle.__getattr__(key)
+        return self.io_bundle[key]
 
     def Declare(self):
 
@@ -91,8 +93,14 @@ class InstanceOperator(Operator):
     def Synthesize(self):
         with VModuleInstance(self.module.name, self.name):
             lines = []
-            for (iobits, intbits) in ZipBits(self.module.io, self.io_bundle):
-                lines.append(f'.{VName(iobits)}({VName(intbits)})')
+
+            for io_name in self.io_bundle:
+                zip_bits = ZipBits(
+                    FilterRvalue(self.module.io_dict[io_name]),
+                    FilterRvalue(self.io_bundle[io_name]))
+
+                for (iobits, intbits) in zip_bits:
+                    lines.append(f'.{VName(iobits)}({VName(intbits)})')
 
             for i in range(len(lines)):
                 VEmitRaw(lines[i] + (',' if (i < len(lines) - 1) else ''))
