@@ -63,7 +63,7 @@ class SignalFrontend(object):
     def __hash__(self):
         return hash(self.signal.meta)
 
-def FilterFrontend(rvalue):
+def FilterFrontend(value):
     """Takes an object and converts it to something that can be used in the
     base circuit model according to the following rules:
 
@@ -82,35 +82,40 @@ def FilterFrontend(rvalue):
         M.BitsSignal, M.ListSignal, M.BundleSignal
     }
 
-    if issubclass(type(rvalue), SignalFrontend):
-        return rvalue.signal
+    if issubclass(type(value), SignalFrontend):
+        return value.signal
 
-    if type(rvalue) is ListIndex:
-        return FilterFrontend(rvalue.rvalue)
+    if type(value) is ListIndex:
+        return FilterFrontend(value.rvalue)
 
-    if type(rvalue) is bool:
-        return 1 if rvalue else 0
+    if type(value) is bool:
+        return 1 if value else 0
 
-    if type(rvalue) in passthrough_types:
-        return rvalue
+    if type(value) in passthrough_types:
+        return value
 
-    assert False, f'Object of type {type(rvalue)} cannot be used in the model'
+    assert False, f'Object of type {type(value)} cannot be used in the model'
 
 #
 # Basic Operators used by frontend wrappers for signals.
 #
 
 class BinaryOperator(Operator):
+    """A generic binary (two-operand) Operator.
+
+    This class can be used to construct any two-operand operation in Verilog.
+    It is used by the frontend wrapper code (below) to enable Python binary
+    operations to produce Verilog operations.
+    """
+
     def __init__(self, op0, op1, opname, verilog_op, r_width=0):
         op0 = FilterFrontend(op0)
         op1 = FilterFrontend(op1)
-
         assert type(op0) is M.BitsSignal
         assert (type(op1) is int) or (type(op1) is M.BitsSignal)
+        super().__init__(opname)
 
         r_width = op0.width if r_width == 0 else r_width
-
-        super().__init__(opname)
 
         self.op0 = op0
         self.op1 = op1
@@ -121,11 +126,11 @@ class BinaryOperator(Operator):
         self.result.signal.meta.name = 'result'
 
     def Declare(self):
-        VDeclWire(self.result.signal)
+        VDeclWire(FilterFrontend(self.result))
 
     def Synthesize(self):
         VAssignRaw(
-            VName(self.result.signal),
+            VName(FilterFrontend(self.result.signal)),
             f'{VName(self.op0)} {self.verilog_op} {VName(self.op1)}')
 
 class NotOperator(Operator):
@@ -133,9 +138,7 @@ class NotOperator(Operator):
 
     def __init__(self, op0):
         op0 = FilterFrontend(op0)
-
         assert type(op0) is M.BitsSignal
-
         super().__init__('not')
 
         self.op0 = op0
@@ -144,23 +147,21 @@ class NotOperator(Operator):
         self.result.signal.meta.name = 'result'
 
     def Declare(self):
-        VDeclWire(self.result.signal)
+        VDeclWire(FilterFrontend(self.result))
 
     def Synthesize(self):
-        VAssignRaw(VName(self.result.signal), f'~{VName(self.op0)}')
+        VAssignRaw(VName(FilterFrontend(self.result)), f'~{VName(self.op0)}')
 
 class SliceOperator(Operator):
     """Produces a new signal that is a bit slice of its input.
 
-    N.B. This operator can only apply to M.BitsSignals.
+    N.B. This operator can only be applied to M.BitsSignals.
     """
 
     def __init__(self, op0, high : int, low : int):
         op0 = FilterFrontend(op0)
-
         assert high >= low
         assert type(op0) is M.BitsSignal
-
         super().__init__('slice')
 
         self.op0 = op0
@@ -171,11 +172,11 @@ class SliceOperator(Operator):
         self.result.signal.meta.name = 'result'
 
     def Declare(self):
-        VDeclWire(self.result.signal)
+        VDeclWire(FilterFrontend(self.result))
 
     def Synthesize(self):
         VAssignRaw(
-            VName(self.result.signal),
+            VName(FilterFrontend(self.result)),
             f'{VName(self.op0)}[{self.high}:{self.low}]')
 
 def Mux(list_signal, index_signal):
