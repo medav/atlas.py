@@ -240,7 +240,7 @@ class ListIndex(object):
 
 #
 # The following classes wrap model signals with additional functionalities that
-# enable DSL list features for adding connections, indexing, etc...
+# enable DSL like features for adding connections, indexing, etc...
 #
 
 class BitsFrontend(SignalFrontend):

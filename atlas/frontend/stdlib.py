@@ -42,7 +42,6 @@ def Cat(signals):
 def Fill(val, width):
     return Cat([val for _ in range(width)])
 
-
 def Mux(list_signal, index_signal):
     """Select the element indicated by index_signal in list_signal.
 

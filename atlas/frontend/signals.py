@@ -86,7 +86,7 @@ def Reg(typespec, clock=None, reset=None, reset_value=None):
 
     signal.ClockWith(clock)
 
-    CurrentModule().signals.append(signal.signal)
+    CurrentModule().signals.append(FilterFrontend(signal))
 
     #
     # The default for every register is to retain its current value. This is

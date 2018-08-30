@@ -98,6 +98,7 @@ def BuildConnectionTree(connections):
 
     connections -- list of connections to convert
     """
+
     if len(connections) == 0:
         return None
 
@@ -153,7 +154,6 @@ def BuildConnectionTree(connections):
             predicate=connections[-1].predicate,
             true_path=BuildConnectionTree(
                 connections[:-1] + connections[-1].true_block),
-
             false_path=sub_ctree)
 
     if len(connections[-1].false_block) > 0:

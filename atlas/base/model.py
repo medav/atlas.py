@@ -82,7 +82,7 @@ class BitsSignal(object):
     meta -- Metadata for this signal
     width -- Width of this signal
     signed -- Whether or not to treat this signal as signed
-    flipped -- When true, dirction is flipped compared to parent
+    flipped -- When true, direction is flipped compared to parent
     connections -- Ordered list of connections to apply to this signal
     clock -- Signal to use for clocking this signal
     reset -- Signal to use for applying synchronous resets
@@ -116,7 +116,7 @@ class ListSignal(object):
     meta -- Metadata for this signal
     fields -- List of subsignals contained by this one
 
-    This signal type is a container for other signals. In generated verilog, a
+    This signal type is a container for other signals. In generated Verilog, a
     list signal simply becomes duplicated signals numbered 0 through N-1.
     """
 
@@ -150,7 +150,7 @@ class Module(object):
     """A Hardware Module
 
     Each module in atlas contains IO, several signals, submodules, and
-    operators - all of which are used to synthsize the module to Verilod in the
+    operators - all of which are used to synthsize the module to Verilog in the
     emitter.
     """
 
