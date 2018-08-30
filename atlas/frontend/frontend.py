@@ -217,10 +217,6 @@ class MuxOperator(Operator):
             VName(FilterFrontend(self.result)),
             f'{node_name}[{VName(self.index_signal)}]')
 
-
-def Mux(list_signal, index_signal):
-    return MuxOperator(list_signal, index_signal).result
-
 @dataclass
 class ListIndex(object):
     """Class that enables both left-hand and right-hand indexing into a list.
@@ -235,7 +231,7 @@ class ListIndex(object):
     rvalue : any = field(init=False)
 
     def __post_init__(self):
-        self.rvalue = Mux(self.list_signal, self.index_signal)
+        self.rvalue = MuxOperator(self.list_signal, self.index_signal).result
 
     def __ilshift__(self, value):
         for i in range(len(self.list_signal)):
