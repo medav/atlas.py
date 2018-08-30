@@ -5,11 +5,14 @@ A Python-based hardware generator framework targeting Verilog
 # Installation
 Requirements:
 * [Python 3.7+](https://www.python.org/)
+* pip
 
-To install, just run:
+Atlas is not yet distributed on PyPI. For now, install by running:
 ```
-$ python setup.py install
+$ pip install .
 ```
+
+In the atlas folder.
 
 # FAQ
 ## Q. Is this Chisel?
