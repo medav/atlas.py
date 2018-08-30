@@ -4,7 +4,7 @@ sys.path.append('.')
 from atlas import *
 
 @Module
-def Mux(n=8):
+def MyMux(n=8):
     io = Io({
         'a': Input(Bits(n)),
         'b': Input(Bits(n)),
@@ -19,10 +19,9 @@ def Mux(n=8):
 
     NameSignals(locals())
 
-circuit = Circuit('mux')
+circuit = Circuit('mymux')
 
 with Context(circuit):
-    top = Mux()
-    circuit.top = Mux()
+    circuit.top = MyMux()
 
-EmitCircuit(circuit, 'test/mux.v')
+EmitCircuit(circuit, 'test/mymux.v')
