@@ -179,45 +179,47 @@ class SliceOperator(Operator):
             VName(FilterFrontend(self.result)),
             f'{VName(self.op0)}[{self.high}:{self.low}]')
 
-def Mux(list_signal, index_signal):
-    """Select a particular index out of a list signal.
+class MuxOperator(Operator):
+    """Multiplexor Operator.
 
-    N.B. The result of this function can only be used on the right-hand side
-    of an assignment.
+    This Operator takes a list signal (of bits only) and an index signal and
+    extracts the indicated signal from the list.
     """
 
-    #
-    # This is a bit of a hack, but here the GetUniqueName function is reused
-    # as if this were an operator. In the future, this function should be
-    # converted into an Operator.
-    #
+    def __init__(self, list_signal, index_signal):
+        self.list_signal = FilterFrontend(list_signal)
+        self.index_signal = FilterFrontend(index_signal)
 
-    result = CreateSignal(
-        Bits(list_signal[0].signal.width),
-        name=Operator.GetUniqueName('mux'))
+        assert type(self.list_signal) is M.ListSignal
+        assert type(self.index_signal) is M.BitsSignal
 
-    CurrentModule().signals.append(result.signal)
+        super().__init__('mux')
 
-    #
-    # The ConnectionContext() context manager pushes a new predicate context
-    # for use in assignments. This effectively means that any assignments
-    # inside the with aren't predicated by anything outside this function.
-    #
+        self.r_width = list_signal[0].width
+        self.l_length = len(list_signal)
 
-    with ConnectionContext():
+        self.result = CreateSignal(Bits(self.r_width))
+        self.result.signal.meta.parent = self
+        self.result.signal.meta.name = 'result'
 
-        #
-        # result is defaulted to [0] because the emitter requires wires to be
-        # driven in all logic cases.
-        #
+    def Declare(self):
+        VDeclWire(FilterFrontend(self.result))
 
-        result <<= list_signal[0]
+    def Synthesize(self):
+        node_name = NewNodeName()
+        VEmitRaw(
+            f'wire [{self.r_width - 1} : 0] {node_name} [{self.l_length - 1} : 0];')
 
-        for i in range(1, len(list_signal)):
-            with index_signal == i:
-                result <<= list_signal[i]
+        for i in range(self.l_length):
+            VAssignRaw(f'{node_name}[{i}]', VName(self.list_signal.fields[i]))
 
-    return result
+        VAssignRaw(
+            VName(FilterFrontend(self.result)),
+            f'{node_name}[{VName(self.index_signal)}]')
+
+
+def Mux(list_signal, index_signal):
+    return MuxOperator(list_signal, index_signal).result
 
 @dataclass
 class ListIndex(object):
