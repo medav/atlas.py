@@ -40,7 +40,7 @@ class SignalFrontend(object):
 
     @staticmethod
     def GetConnection(other, this_type, const_type):
-        other = FilterRvalue(other)
+        other = FilterFrontend(other)
 
         #
         # Now check assignment compatibility
@@ -63,16 +63,18 @@ class SignalFrontend(object):
     def __hash__(self):
         return hash(self.signal.meta)
 
-def FilterRvalue(rvalue):
-    """Takes an item used on the right hand side of a connection or as an
-    operand to a Operator and converts it to something that can be used on the
-    right side of a connection. This means the following:
+def FilterFrontend(rvalue):
+    """Takes an object and converts it to something that can be used in the
+    base circuit model according to the following rules:
 
     * Base signals are extracted from frontend wrappers
     * rvalue is extracted from ListIndex's
     * bools are converted to 1/0
     * Base signals are passed through
     * ints, lists, and dicts are passed through
+
+    N.B. This should be called at any point where data is passed to base.* or
+    emitter.* routines.
     """
 
     passthrough_types = {
@@ -84,7 +86,7 @@ def FilterRvalue(rvalue):
         return rvalue.signal
 
     if type(rvalue) is ListIndex:
-        return FilterRvalue(rvalue.rvalue)
+        return FilterFrontend(rvalue.rvalue)
 
     if type(rvalue) is bool:
         return 1 if rvalue else 0
@@ -92,7 +94,7 @@ def FilterRvalue(rvalue):
     if type(rvalue) in passthrough_types:
         return rvalue
 
-    assert False, f'Object of type {type(rvalue)} cannot be used as an r-value'
+    assert False, f'Object of type {type(rvalue)} cannot be used in the model'
 
 #
 # Basic Operators used by frontend wrappers for signals.
@@ -100,8 +102,8 @@ def FilterRvalue(rvalue):
 
 class BinaryOperator(Operator):
     def __init__(self, op0, op1, opname, verilog_op, r_width=0):
-        op0 = FilterRvalue(op0)
-        op1 = FilterRvalue(op1)
+        op0 = FilterFrontend(op0)
+        op1 = FilterFrontend(op1)
 
         assert type(op0) is M.BitsSignal
         assert (type(op1) is int) or (type(op1) is M.BitsSignal)
@@ -130,7 +132,7 @@ class NotOperator(Operator):
     """Produces a new signal that is the bitwise NOT of its input."""
 
     def __init__(self, op0):
-        op0 = FilterRvalue(op0)
+        op0 = FilterFrontend(op0)
 
         assert type(op0) is M.BitsSignal
 
@@ -154,7 +156,7 @@ class SliceOperator(Operator):
     """
 
     def __init__(self, op0, high : int, low : int):
-        op0 = FilterRvalue(op0)
+        op0 = FilterFrontend(op0)
 
         assert high >= low
         assert type(op0) is M.BitsSignal
@@ -256,7 +258,7 @@ class BitsFrontend(SignalFrontend):
             'Cannot assign to an input signals'
 
         predicate = map(
-            lambda item: (FilterRvalue(item[0]), item[1]),
+            lambda item: (FilterFrontend(item[0]), item[1]),
             CurrentPredicate())
 
         InsertConnection(self.signal, predicate, other)
@@ -265,12 +267,12 @@ class BitsFrontend(SignalFrontend):
 
     def ResetWith(self, reset, reset_value):
         """Set the reset signal and value for this signal."""
-        self.signal.reset = FilterRvalue(reset)
-        self.signal.reset_value = FilterRvalue(reset_value)
+        self.signal.reset = FilterFrontend(reset)
+        self.signal.reset_value = FilterFrontend(reset_value)
 
     def ClockWith(self, clock):
         """Set the clock signal for this signal."""
-        self.signal.clock = FilterRvalue(clock)
+        self.signal.clock = FilterFrontend(clock)
 
     def __enter__(self):
         assert self.signal.width == 1, 'Conditions must have bitwidth == 1'

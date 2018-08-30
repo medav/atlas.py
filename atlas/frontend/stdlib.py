@@ -17,7 +17,7 @@ class CatOperator(Operator):
     def __init__(self, signal_list):
         self.width = 0
 
-        signal_list = list(map(FilterRvalue, signal_list))
+        signal_list = list(map(FilterFrontend, signal_list))
 
         for signal in signal_list:
             assert type(signal) is M.BitsSignal
@@ -96,8 +96,8 @@ class InstanceOperator(Operator):
 
             for io_name in self.io_bundle:
                 zip_bits = ZipBits(
-                    FilterRvalue(self.module.io_dict[io_name]),
-                    FilterRvalue(self.io_bundle[io_name]))
+                    FilterFrontend(self.module.io_dict[io_name]),
+                    FilterFrontend(self.io_bundle[io_name]))
 
                 for (iobits, intbits) in zip_bits:
                     lines.append(f'.{VName(iobits)}({VName(intbits)})')
