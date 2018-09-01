@@ -61,7 +61,7 @@ class SignalFrontend(object):
         pass
 
     def __hash__(self):
-        return hash(self.signal.meta)
+        return hash(self.signal)
 
 def FilterFrontend(value):
     """Takes an object and converts it to something that can be used in the
@@ -117,6 +117,7 @@ class BinaryOperator(Operator):
 
         r_width = op0.width if r_width == 0 else r_width
 
+        self.opname = opname
         self.op0 = op0
         self.op1 = op1
         self.verilog_op = verilog_op
@@ -132,6 +133,18 @@ class BinaryOperator(Operator):
         VAssignRaw(
             VName(FilterFrontend(self.result.signal)),
             f'{VName(self.op0)} {self.verilog_op} {VName(self.op1)}')
+
+    def __eq__(self, other):
+        return (type(self) is type(other)) and \
+            (self.op0 is other.op0) and \
+            (self.op1 is other.op1)
+
+    def __hash__(self):
+        return hash((self.opname, self.op0, self.op1))
+
+@OpGen(cacheable=True, default='result')
+def BinaryOp(op0, op1, opname, verilog_op, r_width=0):
+    return BinaryOperator(op0, op1, opname, verilog_op, r_width)
 
 class NotOperator(Operator):
     """Produces a new signal that is the bitwise NOT of its input."""
@@ -151,6 +164,17 @@ class NotOperator(Operator):
 
     def Synthesize(self):
         VAssignRaw(VName(FilterFrontend(self.result)), f'~{VName(self.op0)}')
+
+    def __eq__(self, other):
+        return (type(self) is type(other)) and \
+            (self.op0 is other.op0)
+
+    def __hash__(self):
+        return hash(('not', self.op0))
+
+@OpGen(cacheable=True, default='result')
+def Not(op0):
+    return NotOperator(op0)
 
 class SliceOperator(Operator):
     """Produces a new signal that is a bit slice of its input.
@@ -178,6 +202,19 @@ class SliceOperator(Operator):
         VAssignRaw(
             VName(FilterFrontend(self.result)),
             f'{VName(self.op0)}[{self.high}:{self.low}]')
+
+    def __eq__(self, other):
+        return (type(self) is type(other)) and \
+            (self.op0 is other.op0) and \
+            (self.high == other.high) and \
+            (self.low == other.low)
+
+    def __hash__(self):
+        return hash(('slice', self.op0, self.high, self.low))
+
+@OpGen(cacheable=True, default='result')
+def Slice(op0, high, low):
+    return SliceOperator(op0, high, low)
 
 class MuxOperator(Operator):
     """Multiplexor Operator.
@@ -216,6 +253,18 @@ class MuxOperator(Operator):
         VAssignRaw(
             VName(FilterFrontend(self.result)),
             f'{node_name}[{VName(self.index_signal)}]')
+
+    def __eq__(self, other):
+        return (type(self) is type(other)) and \
+            (self.list_signal is other.list_signal) and \
+            (self.index_signal is other.index_signal)
+
+    def __hash__(self):
+        return hash(('mux', self.list_signal, self.index_signal))
+
+@OpGen(cacheable=True, default='result')
+def Mux(list_signal, index_signal):
+    return MuxOperator(list_signal, index_signal)
 
 @dataclass
 class ListIndex(object):
@@ -278,7 +327,7 @@ class BitsFrontend(SignalFrontend):
         StartCondition(self)
 
     def __call__(self, high, low):
-        return SliceOperator(self, high, low).result
+        return Slice(self, high, low)
 
     def __exit__(self, *kwargs):
         EndCondition()
@@ -289,22 +338,22 @@ class BitsFrontend(SignalFrontend):
     # Operators that implement their corresponding operations in Verilog code.
     #
 
-    def __add__(self, other): return BinaryOperator(self, other, 'add', '+').result
-    def __sub__(self, other): return BinaryOperator(self, other, 'sub', '-').result
-    def __mul__(self, other): return BinaryOperator(self, other, 'mul', '*').result
-    def __div__(self, other): return BinaryOperator(self, other, 'div', '/').result
-    def __or__(self, other): return BinaryOperator(self, other, 'or', '|').result
-    def __xor__(self, other): return BinaryOperator(self, other, 'xor', '^').result
-    def __and__(self, other): return BinaryOperator(self, other, 'and', '&').result
-    def __gt__(self, other): return BinaryOperator(self, other, 'gt', '>', 1).result
-    def __lt__(self, other): return BinaryOperator(self, other, 'lt', '<', 1).result
-    def __ge__(self, other): return BinaryOperator(self, other, 'ge', '>=', 1).result
-    def __le__(self, other): return BinaryOperator(self, other, 'le', '<=', 1).result
-    def __eq__(self, other): return BinaryOperator(self, other, 'eq', '==', 1).result
-    def __ne__(self, other): return BinaryOperator(self, other, 'neq', '!=', 1).result
-    def __lshift__(self, other): return BinaryOperator(self, other, 'sll', '<<').result
-    def __rshift__(self, other): return BinaryOperator(self, other, 'srl', '>>').result
-    def __invert__(self): return NotOperator(self).result
+    def __add__(self, other): return BinaryOp(self, other, 'add', '+')
+    def __sub__(self, other): return BinaryOp(self, other, 'sub', '-')
+    def __mul__(self, other): return BinaryOp(self, other, 'mul', '*')
+    def __div__(self, other): return BinaryOp(self, other, 'div', '/')
+    def __or__(self, other): return BinaryOp(self, other, 'or', '|')
+    def __xor__(self, other): return BinaryOp(self, other, 'xor', '^')
+    def __and__(self, other): return BinaryOp(self, other, 'and', '&')
+    def __gt__(self, other): return BinaryOp(self, other, 'gt', '>', 1)
+    def __lt__(self, other): return BinaryOp(self, other, 'lt', '<', 1)
+    def __ge__(self, other): return BinaryOp(self, other, 'ge', '>=', 1)
+    def __le__(self, other): return BinaryOp(self, other, 'le', '<=', 1)
+    def __eq__(self, other): return BinaryOp(self, other, 'eq', '==', 1)
+    def __ne__(self, other): return BinaryOp(self, other, 'neq', '!=', 1)
+    def __lshift__(self, other): return BinaryOp(self, other, 'sll', '<<')
+    def __rshift__(self, other): return BinaryOp(self, other, 'srl', '>>')
+    def __invert__(self): return Not(self)
 
 class ListFrontend(SignalFrontend):
     """Wrapper class for a M.ListSignal that adds frontend functionality."""

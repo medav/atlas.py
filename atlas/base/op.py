@@ -2,12 +2,6 @@ from . import model as M
 from .debug import *
 from .utilities import *
 
-_RegisterOp = lambda op: None
-
-def HookRegisterOp(func):
-    global _RegisterOp
-    _RegisterOp = func
-
 class Operator(object):
     name_uid_map = {}
 
@@ -26,7 +20,6 @@ class Operator(object):
         global _RegisterOp
         self.name = Operator.GetUniqueName(opname)
         self.signals = {}
-        _RegisterOp(self)
 
     def Declare(self):
         raise NotImplementedError()
@@ -34,3 +27,8 @@ class Operator(object):
     def Synthesize(self):
         raise NotImplementedError()
 
+    def __eq__(self, other):
+        raise NotImplementedError()
+
+    def __hash__(self):
+        return hash(self.name)

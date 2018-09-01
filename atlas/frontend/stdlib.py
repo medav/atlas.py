@@ -36,19 +36,12 @@ class CatOperator(Operator):
 
         VAssignRaw(VName(self.result.signal), catstr)
 
+@OpGen(cacheable=False, default='result')
 def Cat(signals):
-    return CatOperator(signals).result
+    return CatOperator(signals)
 
 def Fill(val, width):
     return Cat([val for _ in range(width)])
-
-def Mux(list_signal, index_signal):
-    """Select the element indicated by index_signal in list_signal.
-
-    N.B. The result of this can only be used as an r-value.
-    """
-
-    return MuxOperator(list_signal, index_signal).result
 
 class Enum():
     def __init__(self, names):

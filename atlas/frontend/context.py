@@ -7,6 +7,7 @@ circuit = None
 modules = []
 context = []
 prevcondition = []
+optable = []
 
 def Circuit(name : str, default_clock=False, default_reset=False):
     return M.Circuit(name, M.CircuitConfig(default_clock, default_reset))
@@ -54,12 +55,19 @@ def SetPrevCondition(signal):
     assert len(prevcondition) > 0
     prevcondition[-1] = signal
 
+def CurrentOpTable():
+    global optable
+    assert len(optable) > 0
+    return optable[-1]
+
 def PushNewContext():
     global context
     global prevcondition
+    global optable
     assert len(context) == len(prevcondition)
     context.append([])
     prevcondition.append(None)
+    optable.append({})
 
 def PopContext():
     global context
@@ -68,6 +76,7 @@ def PopContext():
     assert len(context) > 0
     context.pop()
     prevcondition.pop()
+    optable.pop()
 
 @contextmanager
 def ConnectionContext():
@@ -129,8 +138,36 @@ class OtherwiseObject(object):
 
 otherwise = OtherwiseObject()
 
-def RegisterOp(aop):
-    CurrentModule().ops.append(aop)
-    return aop
+def OpGen(cacheable=False, default=None):
+    def DefaultFilter(op):
+        if default is None:
+            return op
+        else:
+            return op.__getattribute__(default)
 
-HookRegisterOp(RegisterOp)
+    def OpGenDecorator(func):
+        def OpGenWrapper(*args, **kwargs):
+            op = func(*args, **kwargs)
+
+            if not cacheable:
+                CurrentModule().ops.append(op)
+                return DefaultFilter(op)
+
+            optable = CurrentOpTable()
+            op_hash = hash(op)
+
+            if op_hash not in optable:
+                optable[op_hash] = [op]
+                CurrentModule().ops.append(op)
+                return DefaultFilter(op)
+
+            for other_op in optable[op_hash]:
+                if other_op == op:
+                    return DefaultFilter(other_op)
+
+            optable[op_hash].append(op)
+            CurrentModule().ops.append(op)
+            return DefaultFilter(op)
+
+        return OpGenWrapper
+    return OpGenDecorator
