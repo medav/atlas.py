@@ -53,6 +53,9 @@ class VPosedge(object):
 def VNameInt(item : int):
     return str(item)
 
+def VNameBool(item : bool):
+    return '1' if item else '0'
+
 def VNameStr(item : str):
     return item
 
@@ -92,6 +95,7 @@ def VNameSignal(signal):
 
 name_func_map = {
     int: VNameInt,
+    bool: VNameBool,
     str: VNameStr,
     VPosedge: VNameEdge,
     M.BitsSignal: VNameSignal,
