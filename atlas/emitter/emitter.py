@@ -82,15 +82,23 @@ def EmitSeq(module):
             clocks.add(bits.clock)
 
     for clock in clocks:
+        resets = set()
+
+        for bits in filter(lambda bits: bits.clock is clock, ForBitsInModule(module)):
+            if bits.reset is not None:
+                resets.add(bits.reset)
+
         with VAlways([VPosedge(clock)]):
-            for bits in filter(lambda bits: bits.clock is clock, ForBitsInModule(module)):
-                if (bits.reset is not None) and (bits.reset_value is not None):
-                    with VIf(bits.reset):
+            for reset in resets:
+                with VIf(reset):
+                    for bits in filter(lambda bits: bits.clock is clock and bits.reset is reset, ForBitsInModule(module)):
                         VConnect(bits, bits.reset_value)
-                    with VElse():
+                with VElse():
+                    for bits in filter(lambda bits: bits.clock is clock and bits.reset is reset, ForBitsInModule(module)):
                         EmitSeqConnections(bits)
-                else:
-                    EmitSeqConnections(bits)
+
+            for bits in filter(lambda bits: bits.clock is clock and bits.reset is None, ForBitsInModule(module)):
+                EmitSeqConnections(bits)
 
 def EmitModule(module):
     signals = []
