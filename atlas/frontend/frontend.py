@@ -296,11 +296,11 @@ class BitsFrontend(SignalFrontend):
             lambda item: (FilterFrontend(item[0]), item[1]),
             CurrentPredicate())
 
-        if type(other) is M.BitsSignal:
-            assert self.flipped == other.flipped
-
         if self.flipped:
             assert type(other) is M.BitsSignal, 'Cannot assign to constant'
+            assert other.meta.sigdir != M.SignalTypes.INPUT, \
+                'Cannot assign to an input signal'
+
             InsertConnection(other, predicate, self.signal)
         else:
             InsertConnection(self.signal, predicate, other)
