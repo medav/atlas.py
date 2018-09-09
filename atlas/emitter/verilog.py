@@ -50,11 +50,20 @@ def VEmitRaw(line):
 class VPosedge(object):
     signal : any
 
-def VNameInt(item : int):
-    return str(item)
-
 def VNameBool(item : bool):
     return '1' if item else '0'
+
+def VNameInt(item):
+
+    #
+    # N.B. bools in Python are subclasses if int, so naming a bool will redirect
+    # here first.
+    #
+
+    if type(item) is bool:
+        return VNameBool(item)
+    else:
+        return str(item)
 
 def VNameStr(item : str):
     return item
@@ -95,7 +104,6 @@ def VNameSignal(signal):
 
 name_func_map = {
     int: VNameInt,
-    bool: VNameBool,
     str: VNameStr,
     VPosedge: VNameEdge,
     M.BitsSignal: VNameSignal,
