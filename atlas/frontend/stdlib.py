@@ -164,5 +164,6 @@ class InstanceOperator(Operator):
             for i in range(len(lines)):
                 VEmitRaw(lines[i] + (',' if (i < len(lines) - 1) else ''))
 
+@OpGen(cacheable=False)
 def Instance(module):
     return InstanceOperator(module)
