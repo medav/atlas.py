@@ -7,6 +7,8 @@ dirstr_map = {
     M.SignalTypes.INOUT: 'inout',
 }
 
+valid_rhs_types = {int, bool}
+
 def ForEachBits(signal):
     if type(signal) is M.BitsSignal:
         yield signal
@@ -76,7 +78,7 @@ def InsertConnection(lhs, predicate, rhs):
     """
 
     assert type(lhs) is M.BitsSignal
-    assert (type(rhs) is M.BitsSignal) or (type(rhs) is int)
+    assert (type(rhs) is M.BitsSignal) or (type(rhs) in valid_rhs_types)
 
     block = lhs.connections
 
