@@ -43,6 +43,64 @@ def Cat(signals):
 def Fill(val, width):
     return Cat([val for _ in range(width)])
 
+class MemOperator(Operator):
+    def __init__(self, width : int, depth : int, clock=None):
+        super().__init__('mem')
+        self.width = width
+        self.depth = depth
+        self.addrwidth = Log2Ceil(self.depth)
+
+        if clock is None:
+            self.clock = DefaultClock()
+        else:
+            self.clock = clock
+
+        self.read_ports = []
+        self.write_ports = []
+
+    def Read(self, addr_signal):
+        read_signal = CreateSignal(
+            Bits(self.width),
+            name=f'read_{len(self.read_ports)}',
+            parent=self,
+            frontend=False)
+
+        self.read_ports.append((FilterFrontend(addr_signal), read_signal))
+        return read_signal
+
+    def Write(self, addr_signal, data_signal, enable_signal):
+        assert enable_signal.width == 1
+        self.write_ports.append((
+            FilterFrontend(addr_signal),
+            FilterFrontend(data_signal),
+            FilterFrontend(enable_signal)))
+
+    def Declare(self):
+        for (addr, data) in self.read_ports:
+            VDeclReg(data)
+
+    def Synthesize(self):
+        mem_name = self.name
+
+        VEmitRaw(
+            f'reg [{self.width - 1} : 0] {mem_name} [{self.depth - 1} : 0];')
+
+        with VAlways([VPosedge(self.clock)]):
+            for (addr, data) in self.read_ports:
+                VConnectRaw(
+                    VName(data),
+                    f'{mem_name}[{VName(addr)}]')
+
+            for (addr, data, enable) in self.write_ports:
+                with VIf(enable):
+                    VConnectRaw(
+                        f'{mem_name}[{VName(addr)}]',
+                        VName(data))
+
+@OpGen(cacheable=False)
+def Mem(width, depth, clock=None):
+    return MemOperator(width, depth, clock)
+
 class Enum():
     def __init__(self, names):
         self.count = len(names)
