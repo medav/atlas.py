@@ -38,19 +38,6 @@ class SignalFrontend(object):
     def __getattr__(self, key):
         return self.signal.__getattribute__(key)
 
-    @staticmethod
-    def GetConnection(other, this_type, const_type):
-        other = FilterFrontend(other)
-
-        #
-        # Now check assignment compatibility
-        #
-
-        assert (type(other) is this_type) or (type(other) is const_type), \
-            f'Cannot assign object of type {type(other)} to signal of type {this_type}'
-
-        return other
-
     def ResetWith(self, reset, reset_value):
         raise NotImplementedError()
 
@@ -69,7 +56,6 @@ def FilterFrontend(value):
 
     * Base signals are extracted from frontend wrappers
     * rvalue is extracted from ListIndex's
-    * bools are converted to 1/0
     * Base signals are passed through
     * ints, lists, and dicts are passed through
 
@@ -78,7 +64,7 @@ def FilterFrontend(value):
     """
 
     passthrough_types = {
-        int, list, dict,
+        int, bool, list, dict,
         M.BitsSignal, M.ListSignal, M.BundleSignal
     }
 
@@ -87,9 +73,6 @@ def FilterFrontend(value):
 
     if type(value) is ListIndex:
         return FilterFrontend(value.rvalue)
-
-    if type(value) is bool:
-        return 1 if value else 0
 
     if type(value) in passthrough_types:
         return value
@@ -300,16 +283,27 @@ class BitsFrontend(SignalFrontend):
         super().__init__(signal)
 
     def __ilshift__(self, other):
-        other = SignalFrontend.GetConnection(other, M.BitsSignal, int)
+        other = FilterFrontend(other)
+
+        assert (type(other) is M.BitsSignal) or \
+            (type(other) is int) or \
+            (type(other) is bool)
 
         assert self.signal.meta.sigdir != M.SignalTypes.INPUT, \
-            'Cannot assign to an input signals'
+            'Cannot assign to an input signal'
 
         predicate = map(
             lambda item: (FilterFrontend(item[0]), item[1]),
             CurrentPredicate())
 
-        InsertConnection(self.signal, predicate, other)
+        if type(other) is M.BitsSignal:
+            assert self.flipped == other.flipped
+
+        if self.flipped:
+            assert type(other) is M.BitsSignal, 'Cannot assign to constant'
+            InsertConnection(other, predicate, self.signal)
+        else:
+            InsertConnection(self.signal, predicate, other)
 
         return self
 
@@ -366,7 +360,9 @@ class ListFrontend(SignalFrontend):
         ]
 
     def __ilshift__(self, other):
-        other = SignalFrontend.GetConnection(other, M.ListSignal, list)
+        other = FilterFrontend(other)
+
+        assert (type(other) is M.ListSignal) or (type(other) is list)
 
         if type(other) is M.ListSignal:
             assert len(self) == len(other.fields)
@@ -377,9 +373,6 @@ class ListFrontend(SignalFrontend):
             assert len(self) == len(other)
             for i in range(len(self)):
                 self.wrap_fields[i] <<= other[i]
-
-        else:
-            assert False
 
         return self
 
@@ -413,7 +406,9 @@ class BundleFrontend(SignalFrontend):
         }
 
     def __ilshift__(self, other):
-        other = SignalFrontend.GetConnection(other, M.BundleSignal, dict)
+        other = FilterFrontend(other)
+
+        assert (type(other) is M.BundleSignal) or (type(other) is dict)
 
         if type(other) is M.BundleSignal:
             assert self.signal.fields.keys() >= other.fields.keys()
@@ -424,9 +419,6 @@ class BundleFrontend(SignalFrontend):
             assert self.signal.fields.keys() >= other.keys()
             for key in other:
                 self.wrap_fields[key] <<= other[key]
-
-        else:
-            assert False
 
         return self
 
