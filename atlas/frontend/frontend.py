@@ -368,7 +368,9 @@ class ListFrontend(SignalFrontend):
         if type(other) is M.ListSignal:
             assert len(self) == len(other.fields)
             for i in range(len(self)):
-                if self.wrap_fields[i].meta.sigdir == M.SignalDir.FLIPPED:
+                if FilterFrontend(self.wrap_fields[i].meta.sigdir) == \
+                    M.SignalDir.FLIPPED:
+
                     other.fields[i] <<= self.wrap_fields[i]
                 else:
                     self.wrap_fields[i] <<= other.fields[i]
@@ -406,7 +408,8 @@ class BundleFrontend(SignalFrontend):
         assert type(signal) is M.BundleSignal
         super().__init__(signal)
         self.wrap_fields = {
-            key:WrapSignal(self.signal.fields[key]) for key in self.signal.fields
+            key:WrapSignal(self.signal.fields[key])
+            for key in self.signal.fields
         }
 
     def __ilshift__(self, other):
@@ -417,7 +420,9 @@ class BundleFrontend(SignalFrontend):
         if type(other) is M.BundleSignal:
             assert self.signal.fields.keys() >= other.fields.keys()
             for key in other.fields:
-                if self.wrap_fields[key].meta.sigdir == M.SignalDir.FLIPPED:
+                if FilterFrontend(self.wrap_fields[key]).meta.sigdir == \
+                    M.SignalDir.FLIPPED:
+
                     other.fields[key] <<= self.wrap_fields[key]
                 else:
                     self.wrap_fields[key] <<= other.fields[key]
