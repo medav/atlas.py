@@ -125,8 +125,8 @@ def VModule(name : str, io_dict : dict):
 
     io_lines = []
 
-    for bits, sigdir in ForEachIoBits(io_dict):
-        dirstr = dirstr_map[sigdir]
+    for bits in ForEachIoBits(io_dict):
+        dirstr = dirstr_map[GetDirection(bits)]
         if bits.width == 1:
             io_lines.append(f'{dirstr} {VName(bits)}')
         else:

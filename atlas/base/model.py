@@ -98,7 +98,6 @@ class BitsSignal(object):
 
     width : int = field(default=1)
     signed : bool = field(default=False, repr=False)
-    flipped : bool = field(default=False, repr=False)
 
     connections : list = field(default_factory=list, repr=False)
 
@@ -158,6 +157,7 @@ class Module(object):
     name : str
 
     io_dict : dict = field(default=None, compare=False)
+    io_typespec : dict = field(default=None, compare=False)
     instances : dict = field(default_factory=dict, compare=False, repr=False)
     signals : list = field(default_factory=list, compare=False, repr=False)
     ops : list = field(default_factory=list, compare=False, repr=False)

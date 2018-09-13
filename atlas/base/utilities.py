@@ -59,15 +59,27 @@ def ForBitsInModule(module):
 
 def ForEachIoBits(io_dict : dict):
     for key in io_dict:
-        signal = io_dict[key]
-        parent_dir = signal.meta.sigdir
-        for bits in ForEachBits(signal):
-            sigdir = signal.meta.sigdir
+        for bits in ForEachBits(io_dict[key]):
+            yield bits
 
-            if bits.flipped:
-                sigdir = M.flip_map[sigdir]
+def GetDirection(signal):
+    absolute_dirs = {M.SignalDir.INPUT, M.SignalDir.OUTPUT, M.SignalDir.INOUT}
 
-            yield bits, sigdir
+    if signal.meta.sigdir in absolute_dirs:
+        return signal.meta.sigdir
+    else:
+        if signal.meta.parent is None:
+            assert signal.meta.sigdir == M.SignalDir.INHERIT
+            return M.SignalDir.INHERIT
+
+        parent_dir = GetDirection(signal.meta.parent)
+
+        if signal.meta.sigdir == M.SignalDir.INHERIT:
+            return parent_dir
+        else:
+            assert signal.meta.sigdir == M.SignalDir.FLIPPED
+            return M.flip_map[parent_dir]
+
 
 def InsertConnection(lhs, predicate, rhs):
     """Insert a predicated connection into a signal's connection list

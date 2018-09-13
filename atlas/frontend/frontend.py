@@ -296,15 +296,9 @@ class BitsFrontend(SignalFrontend):
             lambda item: (FilterFrontend(item[0]), item[1]),
             CurrentPredicate())
 
-        if self.flipped:
-            assert type(other) is M.BitsSignal, 'Cannot assign to constant'
-            assert other.meta.sigdir != M.SignalDir.INPUT, \
-                'Cannot assign to an input signal'
+        assert GetDirection(self.signal) != M.SignalDir.INPUT
 
-            InsertConnection(other, predicate, self.signal)
-        else:
-            InsertConnection(self.signal, predicate, other)
-
+        InsertConnection(self.signal, predicate, other)
         return self
 
     def ResetWith(self, reset, reset_value):
@@ -374,7 +368,10 @@ class ListFrontend(SignalFrontend):
         if type(other) is M.ListSignal:
             assert len(self) == len(other.fields)
             for i in range(len(self)):
-                self.wrap_fields[i] <<= other.fields[i]
+                if self.wrap_fields[i].meta.sigdir == M.SignalDir.FLIPPED:
+                    other.fields[i] <<= self.wrap_fields[i]
+                else:
+                    self.wrap_fields[i] <<= other.fields[i]
 
         elif type(other) is list:
             assert len(self) == len(other)
@@ -420,7 +417,10 @@ class BundleFrontend(SignalFrontend):
         if type(other) is M.BundleSignal:
             assert self.signal.fields.keys() >= other.fields.keys()
             for key in other.fields:
-                self.wrap_fields[key] <<= other.fields[key]
+                if self.wrap_fields[key].meta.sigdir == M.SignalDir.FLIPPED:
+                    other.fields[key] <<= self.wrap_fields[key]
+                else:
+                    self.wrap_fields[key] <<= other.fields[key]
 
         elif type(other) is dict:
             assert self.signal.fields.keys() >= other.keys()

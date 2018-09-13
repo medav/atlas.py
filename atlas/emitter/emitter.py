@@ -124,7 +124,8 @@ def EmitModule(module):
         VEmitRaw('')
 
         VEmitRaw(f'// Connections')
-        for bits, sigdir in ForEachIoBits(module.io_dict):
+        for bits in ForEachIoBits(module.io_dict):
+            sigdir = GetDirection(bits)
             if sigdir != M.SignalDir.INPUT:
                 if len(bits.connections) > 0:
                     EmitComb(bits)

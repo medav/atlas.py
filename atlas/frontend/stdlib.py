@@ -123,10 +123,10 @@ class InstanceOperator(Operator):
         self.io_bundle = {}
         self.io_map = {}
 
-        for io_name in self.module.io_dict:
-            typespec = TypespecOf(self.module.io_dict[io_name])
+        for io_name in self.module.io_typespec:
+            typespec = self.module.io_typespec[io_name]
             signal = CreateSignal(typespec, io_name, self)
-            signal.signal.meta.sigdir = M.flip_map[signal.signal.meta.sigdir]
+            signal.signal.meta.sigdir = M.flip_map[typespec.meta.sigdir]
             CurrentModule().signals.append(signal.signal)
             self.io_bundle[io_name] = signal
 
