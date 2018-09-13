@@ -56,6 +56,7 @@ class MemOperator(Operator):
             self.clock = clock
 
         self.read_ports = []
+        self.read_comb_ports = []
         self.write_ports = []
 
     def Read(self, addr_signal):
@@ -66,6 +67,16 @@ class MemOperator(Operator):
             frontend=False)
 
         self.read_ports.append((FilterFrontend(addr_signal), read_signal))
+        return read_signal
+
+    def ReadComb(self, addr_signal):
+        read_signal = CreateSignal(
+            Bits(self.width),
+            name=f'comb_read_{len(self.read_comb_ports)}',
+            parent=self,
+            frontend=False)
+
+        self.read_comb_ports.append((FilterFrontend(addr_signal), read_signal))
         return read_signal
 
     def Write(self, addr_signal, data_signal, enable_signal):
@@ -84,6 +95,11 @@ class MemOperator(Operator):
 
         VEmitRaw(
             f'reg [{self.width - 1} : 0] {mem_name} [{self.depth - 1} : 0];')
+
+        for (addr, data) in self.read_comb_ports:
+            VAssignRaw(
+                VName(data),
+                f'{mem_name}[{VName(addr)}]')
 
         with VAlways([VPosedge(self.clock)]):
             for (addr, data) in self.read_ports:

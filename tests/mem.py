@@ -10,13 +10,16 @@ def MemModule():
         'waddr': Input(Bits(8)),
         'wdata': Input(Bits(8)),
         'wen': Input(Bits(1)),
-        'rdata': Output(Bits(8))
+        'rdata': Output(Bits(8)),
+        'rdata_comb': Output(Bits(8))
     })
 
     mem = Mem(8, 256)
 
     io.rdata <<= mem.Read(io.raddr)
     mem.Write(io.waddr, io.wdata, io.wen)
+
+    io.rdata_comb <<= mem.ReadComb(io.raddr)
 
     NameSignals(locals())
 
