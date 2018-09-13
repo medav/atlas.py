@@ -67,7 +67,7 @@ class MemOperator(Operator):
             frontend=False)
 
         self.read_ports.append((FilterFrontend(addr_signal), read_signal))
-        return read_signal
+        return WrapSignal(read_signal)
 
     def ReadComb(self, addr_signal):
         read_signal = CreateSignal(
@@ -77,7 +77,7 @@ class MemOperator(Operator):
             frontend=False)
 
         self.read_comb_ports.append((FilterFrontend(addr_signal), read_signal))
-        return read_signal
+        return WrapSignal(read_signal)
 
     def Write(self, addr_signal, data_signal, enable_signal):
         assert enable_signal.width == 1
