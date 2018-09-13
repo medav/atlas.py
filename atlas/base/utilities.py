@@ -107,7 +107,7 @@ def InsertConnection(lhs, predicate, rhs):
 
     block.append(rhs)
 
-def BuildConnectionTree(connections):
+def BuildConnectionTree(connections, debug_name=None):
     """Build a binary tree of connections based off a connection AST.
 
     connections -- list of connections to convert
@@ -132,7 +132,8 @@ def BuildConnectionTree(connections):
 
     if len(connections) == 1:
         assert (len(connections[-1].true_block) > 0) and \
-            (len(connections[-1].false_block) > 0)
+            (len(connections[-1].false_block) > 0), \
+            f'Signal {debug_name} has incomplete connection ast'
 
     #
     # If the last assignment is predicated with both paths containing non-zero
@@ -148,10 +149,10 @@ def BuildConnectionTree(connections):
         return M.ConnectionTree(
             predicate=connections[-1].predicate,
             true_path=BuildConnectionTree(
-                connections[:-1] + connections[-1].true_block),
+                connections[:-1] + connections[-1].true_block, debug_name),
 
             false_path=BuildConnectionTree(
-                connections[:-1] + connections[-1].false_block))
+                connections[:-1] + connections[-1].false_block, debug_name))
 
     #
     # If the last assignment was predicated but one of the two paths has no
@@ -161,13 +162,13 @@ def BuildConnectionTree(connections):
     assert not ((len(connections[-1].true_block) == 0) and \
         (len(connections[-1].false_block) == 0))
 
-    sub_ctree = BuildConnectionTree(connections[:-1])
+    sub_ctree = BuildConnectionTree(connections[:-1], debug_name)
 
     if len(connections[-1].true_block) > 0:
         return M.ConnectionTree(
             predicate=connections[-1].predicate,
             true_path=BuildConnectionTree(
-                connections[:-1] + connections[-1].true_block),
+                connections[:-1] + connections[-1].true_block, debug_name),
             false_path=sub_ctree)
 
     if len(connections[-1].false_block) > 0:
@@ -175,7 +176,7 @@ def BuildConnectionTree(connections):
             predicate=connections[-1].predicate,
             true_path=sub_ctree,
             false_path=BuildConnectionTree(
-                connections[:-1] + connections[-1].false_block))
+                connections[:-1] + connections[-1].false_block, debug_name))
 
 def PrintCTree(ctree, indent=0):
     def WriteLine(line):

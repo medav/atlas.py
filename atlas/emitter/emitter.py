@@ -46,7 +46,7 @@ def EmitCombNode(target, node):
 
 def EmitComb(bits):
     assert bits.clock is None
-    ctree = BuildConnectionTree(bits.connections)
+    ctree = BuildConnectionTree(bits.connections, VName(bits))
 
     if type(ctree) is M.ConnectionTree:
         EmitCombNode(bits, ctree)
