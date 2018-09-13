@@ -2,9 +2,9 @@ from . import model as M
 from .typespec import *
 
 dirstr_map = {
-    M.SignalTypes.INPUT: 'input',
-    M.SignalTypes.OUTPUT: 'output',
-    M.SignalTypes.INOUT: 'inout',
+    M.SignalDir.INPUT: 'input',
+    M.SignalDir.OUTPUT: 'output',
+    M.SignalDir.INOUT: 'inout',
 }
 
 valid_rhs_types = {int, bool}

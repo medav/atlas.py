@@ -6,32 +6,29 @@ from ..emitter import *
 from .context import *
 from .frontend import *
 
-def Input(typespec):
+def Input(primitive_spec):
     """Produce a signal marked as Input."""
-    signal = CreateSignal(typespec, frontend=False)
-    signal.meta.sigdir = M.SignalTypes.INPUT
+    signal = CreateSignal(primitive_spec, frontend=False)
+    signal.meta.sigdir = M.SignalDir.INPUT
     return signal
 
-def Output(typespec):
+def Output(primitive_spec):
     """Produce a signal marked as Output."""
-    signal = CreateSignal(typespec, frontend=False)
-    signal.meta.sigdir = M.SignalTypes.OUTPUT
+    signal = CreateSignal(primitive_spec, frontend=False)
+    signal.meta.sigdir = M.SignalDir.OUTPUT
     return signal
 
-def Inout(typespec):
+def Inout(primitive_spec):
     """Produce a signal marked as Inout."""
-    signal = CreateSignal(typespec, frontend=False)
-    signal.sigdir = M.SignalTypes.INOUT
+    signal = CreateSignal(primitive_spec, frontend=False)
+    signal.sigdir = M.SignalDir.INOUT
     return signal
 
-def Flip(typespec):
-    """Mark a typespec as flipped.
+def Flip(primitive_spec):
+    """Mark a typespec as flipped."""
 
-    N.B. This can only be applied to bits signals.
-    """
-
-    assert IsBits(typespec)
-    typespec['flipped'] = True
+    typespec = BuildTypespec(primitive_spec)
+    typespec.meta.sigdir = M.SignalDir.FLIPPED
     return typespec
 
 def Io(io_dict):
@@ -55,16 +52,16 @@ def Io(io_dict):
     CurrentModule().io_dict = io_dict
     return IoFrontend(io_dict)
 
-def Wire(typespec):
-    """Produce a wire signal based on the given typespec."""
-    signal = CreateSignal(typespec)
+def Wire(primitive_spec):
+    """Produce a wire signal based on the given primitive_spec."""
+    signal = CreateSignal(primitive_spec)
     CurrentModule().signals.append(signal.signal)
     return signal
 
-def Reg(typespec, clock=None, reset=None, reset_value=None):
-    """Produce a register signal based on the given typespec."""
+def Reg(primitive_spec, clock=None, reset=None, reset_value=None):
+    """Produce a register signal based on the given primitive_spec."""
 
-    signal = CreateSignal(typespec)
+    signal = CreateSignal(primitive_spec)
 
     #
     # If clock and reset are not supplied, used the current module's default

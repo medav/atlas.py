@@ -1,14 +1,16 @@
 from dataclasses import *
 
-class SignalTypes(object):
-    INOUT = 0
+class SignalDir(object):
+    INHERIT = 0
     INPUT = 1
     OUTPUT = 2
+    INOUT = 3
+    FLIPPED = 4
 
 flip_map = {
-    SignalTypes.INPUT: SignalTypes.OUTPUT,
-    SignalTypes.OUTPUT: SignalTypes.INPUT,
-    SignalTypes.INOUT: SignalTypes.INOUT,
+    SignalDir.INPUT: SignalDir.OUTPUT,
+    SignalDir.OUTPUT: SignalDir.INPUT,
+    SignalDir.INOUT: SignalDir.INOUT,
 }
 
 @dataclass
@@ -26,7 +28,7 @@ class SignalMeta(object):
 
     name : str = field(default=MISSING)
     parent : any = field(default=MISSING, repr=False)
-    sigdir : int = field(default=SignalTypes.INOUT, repr=False)
+    sigdir : int = field(default=SignalDir.INHERIT, repr=False)
 
     def __hash__(self):
         return hash((self.name, self.parent, self.sigdir))
@@ -62,7 +64,7 @@ class ConnectionBlock(object):
     false_block -- list of connections to apply if predicate is false
 
     A ConnectionBlock is used to predicate connections on a signal called the
-    "predicate". During elabration (execution of user code), a signal's
+    "predicate". During elaboration (execution of user code), a signal's
     connection list is populated with direct (unpredicated) connections and also
     predicated connections, which produce a ConnectionBlock.
 
@@ -82,7 +84,6 @@ class BitsSignal(object):
     meta -- Metadata for this signal
     width -- Width of this signal
     signed -- Whether or not to treat this signal as signed
-    flipped -- When true, direction is flipped compared to parent
     connections -- Ordered list of connections to apply to this signal
     clock -- Signal to use for clocking this signal
     reset -- Signal to use for applying synchronous resets

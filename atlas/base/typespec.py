@@ -1,21 +1,44 @@
-from dataclasses import dataclass
+from dataclasses import *
 
 from . import model as M
 
-def Bits(width, signed=False, flipped=False):
-    return {
-        'width': width,
-        'signed': signed,
-        'flipped': flipped
-    }
+@dataclass
+class TypeMeta(object):
+    sigdir : int = M.SignalDir.INHERIT
 
-def IsBits(typespec):
-    if type(typespec) is not dict:
-        return False
+@dataclass
+class Bits(object):
+    width : int
+    signed : bool = False
+    meta : TypeMeta = field(default_factory=TypeMeta)
+
+@dataclass
+class List(object):
+    length : int
+    field_type : any
+    meta : TypeMeta = field(default_factory=TypeMeta)
+
+@dataclass
+class Bundle(object):
+    fields : dict
+    meta : TypeMeta = field(default_factory=TypeMeta)
+
+def BuildTypespec(primitive_spec):
+    if type(primitive_spec) is Bits:
+        return primitive_spec
+    elif type(primitive_spec) is list:
+        return List(len(primitive_spec), BuildTypespec(primitive_spec[0]))
+    elif type(primitive_spec) is dict:
+        return Bundle({
+                key:BuildTypespec(primitive_spec[key])
+                for key in primitive_spec
+            })
+    elif type(primitive_spec) is List:
+        return primitive_spec
+    elif type(primitive_spec) is Bundle:
+        return primitive_spec
     else:
-        return \
-            (set(typespec.keys()) == {'width', 'signed', 'flipped'}) and \
-            (type(typespec['width']) is int)
+        assert False, f"Cannot build typespec from {primitive_spec}"
 
 def CompareTypespec(type1, type2):
     if type(type1) != type(type2):
@@ -45,15 +68,18 @@ def TypespecOf(signal):
     """Reproduce a typespec for a given signal."""
 
     if type(signal) is M.BitsSignal:
-        return Bits(signal.width, signal.signed, signal.flipped)
+        return Bits(signal.width, signal.signed, TypeMeta(signal.meta.sigdir))
 
     elif type(signal) is M.ListSignal:
-        return [
-            TypespecOf(signal.fields[0]) for _ in range(len(signal.fields))
-        ]
+        return List(
+            len(signal.fields),
+            TypespecOf(signal.fields[0]),
+            TypeMeta(signal.meta.sigdir))
 
     elif type(signal) is M.BundleSignal:
-        return { key: TypespecOf(signal.fields[key]) for key in signal.fields }
+        return Bundle(
+            { key: TypespecOf(signal.fields[key]) for key in signal.fields },
+            TypeMeta(signal.meta.sigdir))
 
     else:
         assert False, f'Unknown signal type: {type(signal)}'

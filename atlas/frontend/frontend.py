@@ -289,7 +289,7 @@ class BitsFrontend(SignalFrontend):
             (type(other) is int) or \
             (type(other) is bool)
 
-        assert self.signal.meta.sigdir != M.SignalTypes.INPUT, \
+        assert self.signal.meta.sigdir != M.SignalDir.INPUT, \
             'Cannot assign to an input signal'
 
         predicate = map(
@@ -298,7 +298,7 @@ class BitsFrontend(SignalFrontend):
 
         if self.flipped:
             assert type(other) is M.BitsSignal, 'Cannot assign to constant'
-            assert other.meta.sigdir != M.SignalTypes.INPUT, \
+            assert other.meta.sigdir != M.SignalDir.INPUT, \
                 'Cannot assign to an input signal'
 
             InsertConnection(other, predicate, self.signal)
@@ -473,48 +473,52 @@ def WrapSignal(signal):
     else:
         assert False, f'Cannot wrap signal of type {type(signal)}'
 
-def CreateSignal(typespec, name=None, parent=None, frontend=True):
-    """Produce a signal given a typespec.
+def CreateSignal(primitive_spec, name=None, parent=None, frontend=True):
+    """Produce a signal given a primitive_spec.
 
     This is an entrypoint that is called by the signal init functions to
     recursively produce sub-signals.
     """
 
-    if IsBits(typespec):
+    typespec = BuildTypespec(primitive_spec)
+
+    if type(typespec) is Bits:
         signal = M.BitsSignal(
             meta=M.SignalMeta(
                 name=name,
-                parent=parent
+                parent=parent,
+                sigdir=typespec.meta.sigdir
             ),
-            width=typespec['width'],
-            signed=typespec['signed'],
-            flipped=typespec['flipped']
+            width=typespec.width,
+            signed=typespec.signed
         )
 
-    elif type(typespec) is list:
+    elif type(typespec) is List:
         signal = M.ListSignal(
             M.SignalMeta(
                 name=name,
-                parent=parent
+                parent=parent,
+                sigdir=typespec.meta.sigdir
             ),
             fields = list([
-                CreateSignal(typespec[i], f'i{i}', None, False)
-                for i in range(len(typespec))
+                CreateSignal(typespec.field_type, f'i{i}', None, False)
+                for i in range(typespec.length)
             ])
         )
 
         for item in signal.fields:
             item.meta.parent = signal
 
-    elif type(typespec) is dict:
+    elif type(typespec) is Bundle:
         signal = M.BundleSignal(
             M.SignalMeta(
                 name=name,
-                parent=parent
+                parent=parent,
+                sigdir=typespec.meta.sigdir
             ),
             fields = {
-                field:CreateSignal(typespec[field], field, None, False)
-                for field in typespec
+                field:CreateSignal(typespec.fields[field], field, None, False)
+                for field in typespec.fields
             }
         )
 

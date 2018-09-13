@@ -181,7 +181,7 @@ def VConnectRaw(lhs, rhs, nonblock=True):
     VEmitRaw(f'{lhs} {symbol} {rhs};')
 
 def VConnect(lbits : M.BitsSignal, rhs, nonblock=True):
-    assert lbits.meta.sigdir != M.SignalTypes.INPUT
+    assert lbits.meta.sigdir != M.SignalDir.INPUT
     VConnectRaw(VName(lbits), VName(rhs), nonblock)
 
 @contextmanager
