@@ -24,4 +24,4 @@ circuit = Circuit('mymux')
 with Context(circuit):
     circuit.top = MyMux()
 
-EmitCircuit(circuit, 'test/mymux.v')
+EmitCircuit(circuit, 'tests/mymux.v')

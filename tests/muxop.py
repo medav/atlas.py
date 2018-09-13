@@ -20,4 +20,4 @@ circuit = Circuit('muxop')
 with Context(circuit):
     circuit.top = MuxOp(8, 8)
 
-EmitCircuit(circuit, 'test/muxop.v')
+EmitCircuit(circuit, 'tests/muxop.v')

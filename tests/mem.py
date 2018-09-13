@@ -25,4 +25,4 @@ circuit = Circuit('memmodule', True, True)
 with Context(circuit):
     circuit.top = MemModule()
 
-EmitCircuit(circuit, 'test/memmodule.v')
+EmitCircuit(circuit, 'tests/memmodule.v')

@@ -39,4 +39,4 @@ with Context(circuit):
 
 circuit.top = top
 
-EmitCircuit(circuit, 'test/gcd.v')
+EmitCircuit(circuit, 'tests/gcd.v')

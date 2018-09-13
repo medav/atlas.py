@@ -53,4 +53,4 @@ circuit = Circuit('modules', True, True)
 with Context(circuit):
     circuit.top = RippleAdder(8)
 
-EmitCircuit(circuit, 'test/modules.v')
+EmitCircuit(circuit, 'tests/modules.v')

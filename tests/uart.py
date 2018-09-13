@@ -186,4 +186,4 @@ with Context(circuit):
     UartReceiver(50000000, 115200, 8)
     circuit.top = UartTransmitter(50000000, 115200, 8)
 
-EmitCircuit(circuit, 'test/uart.v')
+EmitCircuit(circuit, 'tests/uart.v')
