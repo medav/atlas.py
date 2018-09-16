@@ -262,6 +262,12 @@ class ListIndex(object):
     index_signal : M.BitsSignal
     rvalue : any = field(init=False)
 
+    def __getattr__(self, key):
+        return self.rvalue.__getattr__(key)
+
+    def __call__(self, high, low):
+        return self.rvalue(high, low)
+
     def __post_init__(self):
         self.rvalue = MuxOperator(self.list_signal, self.index_signal).result
 
