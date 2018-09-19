@@ -367,6 +367,7 @@ class ListFrontend(SignalFrontend):
         ]
 
     def __ilshift__(self, other):
+        other_fe = other
         other = FilterFrontend(other)
 
         assert (type(other) is M.ListSignal) or (type(other) is list)
@@ -377,9 +378,9 @@ class ListFrontend(SignalFrontend):
                 if FilterFrontend(self.wrap_fields[i].meta.sigdir) == \
                     M.SignalDir.FLIPPED:
 
-                    other.fields[i] <<= self.wrap_fields[i]
+                    other_fe.wrap_fields[i] <<= self.wrap_fields[i]
                 else:
-                    self.wrap_fields[i] <<= other.fields[i]
+                    self.wrap_fields[i] <<= other_fe.wrap_fields[i]
 
         elif type(other) is list:
             assert len(self) == len(other)
@@ -419,6 +420,7 @@ class BundleFrontend(SignalFrontend):
         }
 
     def __ilshift__(self, other):
+        other_fe = other
         other = FilterFrontend(other)
 
         assert (type(other) is M.BundleSignal) or (type(other) is dict)
@@ -429,9 +431,9 @@ class BundleFrontend(SignalFrontend):
                 if FilterFrontend(self.wrap_fields[key]).meta.sigdir == \
                     M.SignalDir.FLIPPED:
 
-                    other.fields[key] <<= self.wrap_fields[key]
+                    other_fe.wrap_fields[key] <<= self.wrap_fields[key]
                 else:
-                    self.wrap_fields[key] <<= other.fields[key]
+                    self.wrap_fields[key] <<= other_fe.wrap_fields[key]
 
         elif type(other) is dict:
             assert self.signal.fields.keys() >= other.keys()
