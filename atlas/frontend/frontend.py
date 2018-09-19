@@ -269,7 +269,7 @@ class ListIndex(object):
         return self.rvalue(high, low)
 
     def __post_init__(self):
-        self.rvalue = MuxOperator(self.list_signal, self.index_signal).result
+        self.rvalue = Mux(self.list_signal, self.index_signal)
 
     def __ilshift__(self, value):
         for i in range(len(self.list_signal)):
