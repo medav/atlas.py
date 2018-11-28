@@ -332,10 +332,22 @@ class BitsFrontend(SignalFrontend):
     # Operators that implement their corresponding operations in Verilog code.
     #
 
-    def __add__(self, other): return BinaryOp(self, other, 'add', '+')
-    def __sub__(self, other): return BinaryOp(self, other, 'sub', '-')
-    def __mul__(self, other): return BinaryOp(self, other, 'mul', '*')
-    def __div__(self, other): return BinaryOp(self, other, 'div', '/')
+    @staticmethod
+    def WidthOf(item):
+        item = FilterFrontend(item)
+        if type(item) is bool:
+            return 1
+        elif type(item) is int:
+            return 0
+        elif type(item) is M.BitsSignal:
+            return item.width
+        else:
+            return 0
+
+    def __add__(self, other): return BinaryOp(self, other, 'add', '+', max(self.width, self.WidthOf(other)) + 1)
+    def __sub__(self, other): return BinaryOp(self, other, 'sub', '-', max(self.width, self.WidthOf(other)))
+    def __mul__(self, other): return BinaryOp(self, other, 'mul', '*', max(self.width, self.WidthOf(other)) * 2)
+    def __div__(self, other): return BinaryOp(self, other, 'div', '/', max(self.width, self.WidthOf(other)))
     def __or__(self, other): return BinaryOp(self, other, 'or', '|')
     def __xor__(self, other): return BinaryOp(self, other, 'xor', '^')
     def __and__(self, other): return BinaryOp(self, other, 'and', '&')
