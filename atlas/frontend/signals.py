@@ -24,7 +24,7 @@ def Inout(primitive_spec):
     """Mark a typespec as inout."""
 
     typespec = BuildTypespec(primitive_spec)
-    typespec.meta.sigdir = M.SignalDir.FLIPPEd
+    typespec.meta.sigdir = M.SignalDir.INOUT
     return typespec
 
 def Flip(primitive_spec):

@@ -64,7 +64,7 @@ def FilterFrontend(value):
     """
 
     passthrough_types = {
-        int, bool, list, dict,
+        int, bool, str, list, dict,
         M.BitsSignal, M.ListSignal, M.BundleSignal
     }
 
@@ -293,7 +293,8 @@ class BitsFrontend(SignalFrontend):
 
         assert (type(other) is M.BitsSignal) or \
             (type(other) is int) or \
-            (type(other) is bool)
+            (type(other) is bool) or \
+            (type(other) is str)
 
         assert self.signal.meta.sigdir != M.SignalDir.INPUT, \
             'Cannot assign to an input signal'

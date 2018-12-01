@@ -7,7 +7,18 @@ dirstr_map = {
     M.SignalDir.INOUT: 'inout',
 }
 
-valid_rhs_types = {int, bool}
+valid_rhs_types = {int, bool, str}
+
+def SignalDebugName(signal):
+    sigtypes = { M.BitsSignal, M.ListSignal, M.BundleSignal }
+
+    name_parts = []
+
+    while type(signal) in sigtypes:
+        name_parts.append(str(signal.meta.name))
+        signal = signal.meta.parent
+
+    return '/'.join(reversed(name_parts))
 
 def ForEachBits(signal):
     if type(signal) is M.BitsSignal:
@@ -62,8 +73,14 @@ def ForEachIoBits(io_dict : dict):
         for bits in ForEachBits(io_dict[key]):
             yield bits
 
-def GetDirection(signal):
+def GetDirection(signal, debug_signal=None):
     absolute_dirs = {M.SignalDir.INPUT, M.SignalDir.OUTPUT, M.SignalDir.INOUT}
+
+    if debug_signal is None:
+        debug_signal = signal
+
+    if (type(signal) is str) and (signal == 'io'):
+        raise RuntimeError(f'IO signal {SignalDebugName(debug_signal)} does not have a direction')
 
     if signal.meta.sigdir in absolute_dirs:
         return signal.meta.sigdir
@@ -72,7 +89,7 @@ def GetDirection(signal):
             assert signal.meta.sigdir == M.SignalDir.INHERIT
             return M.SignalDir.INHERIT
 
-        parent_dir = GetDirection(signal.meta.parent)
+        parent_dir = GetDirection(signal.meta.parent, debug_signal)
 
         if signal.meta.sigdir == M.SignalDir.INHERIT:
             return parent_dir
