@@ -287,8 +287,16 @@ class BitsFrontend(SignalFrontend):
     def __init__(self, signal):
         assert type(signal) is M.BitsSignal
         super().__init__(signal)
+        self.can_coerce = True
 
     def __ilshift__(self, other):
+        if type(other) is BitsFrontend:
+            if self.width != other.width:
+                if other.can_coerce:
+                    other = other(self.width - 1, 0)
+                else:
+                    raise RuntimeError(f'Cannot coerce RHS signal to match width')
+
         other = FilterFrontend(other)
 
         assert (type(other) is M.BitsSignal) or \
