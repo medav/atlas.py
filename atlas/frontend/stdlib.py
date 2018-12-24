@@ -81,6 +81,7 @@ class MemOperator(Operator):
 
     def Write(self, addr_signal, data_signal, enable_signal):
         assert enable_signal.width == 1
+        assert data_signal.width == self.width
         self.write_ports.append((
             FilterFrontend(addr_signal),
             FilterFrontend(data_signal),
