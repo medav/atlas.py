@@ -111,6 +111,9 @@ def InsertConnection(lhs, predicate, rhs):
 
     block = lhs.connections
 
+    if (type(rhs) is M.BitsSignal) and (lhs.width != rhs.width):
+        print(f'Warning: Mismatched Widths: {SignalDebugName(lhs)} (width = {lhs.width}) and {SignalDebugName(rhs)} (width = {rhs.width})')
+
     for (signal, path) in predicate:
         if (len(block) > 0) and \
             (type(block[-1]) is M.ConnectionBlock) and \
