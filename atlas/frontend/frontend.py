@@ -562,6 +562,8 @@ def CreateSignal(primitive_spec, name=None, parent=None, frontend=True):
     else:
         assert False, f'Unknown typespec: {typespec}'
 
+    signal.meta.typespec = typespec
+
     if frontend:
         return WrapSignal(signal)
     else:

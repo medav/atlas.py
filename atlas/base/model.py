@@ -29,6 +29,7 @@ class SignalMeta(object):
     name : str = field(default=MISSING)
     parent : any = field(default=MISSING, repr=False)
     sigdir : int = field(default=SignalDir.INHERIT, repr=False)
+    typespec : any = field(default=None, repr=False)
 
     def __hash__(self):
         return hash((self.name, self.parent, self.sigdir))
