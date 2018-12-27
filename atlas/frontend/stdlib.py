@@ -184,3 +184,32 @@ class InstanceOperator(Operator):
 @OpGen(cacheable=False)
 def Instance(module):
     return InstanceOperator(module)
+
+def FillBits(signal, const_value):
+    signal = FilterFrontend(signal)
+
+    if type(signal) is M.BitsSignal:
+        return const_value
+
+    elif type(signal) is M.ListSignal:
+        return [
+            FillBits(signal.fields[0], const_value)
+            for _ in range(len(signal.fields))
+        ]
+
+    elif type(signal) is M.BundleSignal:
+        return {
+            key: FillBits(signal.fields[key], const_value)
+            for key in signal.fields
+        }
+
+    assert False, f'Cannot fill signal {signal}'
+
+def ZerosLike(signal):
+    return FillBits(signal, 0)
+
+def RegNext(signal):
+    typespec = FilterFrontend(signal).meta.typespec
+    r = Reg(typespec, reset_value=ZerosLike(signal))
+    r <<= signal
+    return r
