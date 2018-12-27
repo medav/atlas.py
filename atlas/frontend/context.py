@@ -8,6 +8,19 @@ modules = []
 context = []
 prevcondition = []
 optable = []
+temp_num = 0
+
+def NewWireName():
+    global temp_num
+    name = f'wire{temp_num}'
+    temp_num += 1
+    return name
+
+def NewRegName():
+    global temp_num
+    name = f'reg{temp_num}'
+    temp_num += 1
+    return name
 
 def Circuit(name : str, default_clock=False, default_reset=False):
     return M.Circuit(name, M.CircuitConfig(default_clock, default_reset))

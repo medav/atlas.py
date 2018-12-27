@@ -64,14 +64,14 @@ def Io(io_typespec):
 
 def Wire(primitive_spec):
     """Produce a wire signal based on the given primitive_spec."""
-    signal = CreateSignal(primitive_spec)
+    signal = CreateSignal(primitive_spec, name=NewWireName())
     CurrentModule().signals.append(signal.signal)
     return signal
 
 def Reg(primitive_spec, clock=None, reset=None, reset_value=None):
     """Produce a register signal based on the given primitive_spec."""
 
-    signal = CreateSignal(primitive_spec)
+    signal = CreateSignal(primitive_spec, name=NewRegName())
 
     #
     # If clock and reset are not supplied, used the current module's default
@@ -111,7 +111,5 @@ def NameSignals(locals):
     """
 
     for name in locals:
-        if issubclass(type(locals[name]), SignalFrontend) and \
-            locals[name].signal.meta.name is None:
-
+        if issubclass(type(locals[name]), SignalFrontend):
             locals[name].signal.meta.name = name
