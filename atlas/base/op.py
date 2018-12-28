@@ -16,9 +16,12 @@ class Operator(object):
 
         return f'{opname}_{uid}'
 
-    def __init__(self, opname):
+    def __init__(self, opname=None, override_name=None):
         global _RegisterOp
-        self.name = Operator.GetUniqueName(opname)
+        if override_name is not None:
+            self.name = override_name
+        else:
+            self.name = Operator.GetUniqueName(opname)
         self.signals = {}
 
     def Declare(self):
