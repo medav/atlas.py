@@ -102,14 +102,3 @@ def Reg(primitive_spec, clock=None, reset=None, reset_value=None):
 
     signal <<= signal
     return signal
-
-def NameSignals(locals):
-    """Search locals and name any signal by its key.
-
-    N.B. This intended to be called by client code to name signals in the local
-    scope of a function during module elaboration.
-    """
-
-    for name in locals:
-        if issubclass(type(locals[name]), SignalFrontend):
-            locals[name].signal.meta.name = name

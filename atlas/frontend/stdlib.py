@@ -213,3 +213,17 @@ def RegNext(signal):
     r = Reg(typespec, reset_value=ZerosLike(signal))
     r <<= signal
     return r
+
+def NameSignals(locals):
+    """Search locals and name any signal by its key.
+
+    N.B. This intended to be called by client code to name signals in the local
+    scope of a function during module elaboration.
+    """
+
+    for name in locals:
+        if issubclass(type(locals[name]), SignalFrontend):
+            locals[name].signal.meta.name = name
+
+        if type(locals[name]) is InstanceOperator:
+            locals[name].name = name
