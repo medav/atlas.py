@@ -59,14 +59,21 @@ class MemOperator(Operator):
         self.read_comb_ports = []
         self.write_ports = []
 
-    def Read(self, addr_signal):
+    def Read(self, addr_signal, enable_signal=None):
         read_signal = CreateSignal(
             Bits(self.width),
             name=f'read_{len(self.read_ports)}',
             parent=self,
             frontend=False)
 
-        self.read_ports.append((FilterFrontend(addr_signal), read_signal))
+        if enable_signal is not None:
+            enable_signal = FilterFrontend(enable_signal)
+
+        self.read_ports.append((
+            FilterFrontend(addr_signal),
+            read_signal,
+            enable_signal))
+
         return WrapSignal(read_signal)
 
     def ReadComb(self, addr_signal):
@@ -88,7 +95,7 @@ class MemOperator(Operator):
             FilterFrontend(enable_signal)))
 
     def Declare(self):
-        for (addr, data) in self.read_ports:
+        for (addr, data, enable) in self.read_ports:
             VDeclReg(data)
 
     def Synthesize(self):
@@ -103,10 +110,16 @@ class MemOperator(Operator):
                 f'{mem_name}[{VName(addr)}]')
 
         with VAlways([VPosedge(self.clock)]):
-            for (addr, data) in self.read_ports:
-                VConnectRaw(
-                    VName(data),
-                    f'{mem_name}[{VName(addr)}]')
+            for (addr, data, enable) in self.read_ports:
+                if enable is None:
+                    VConnectRaw(
+                        VName(data),
+                        f'{mem_name}[{VName(addr)}]')
+                else:
+                    with VIf(enable):
+                        VConnectRaw(
+                            VName(data),
+                            f'{mem_name}[{VName(addr)}]')
 
             for (addr, data, enable) in self.write_ports:
                 with VIf(enable):
