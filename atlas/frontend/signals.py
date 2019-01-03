@@ -62,6 +62,23 @@ def Io(io_typespec):
 
     return IoFrontend(io_dict)
 
+def FlipSignal(signal):
+    signal = FilterFrontend(signal)
+
+    if signal.meta.sigdir == M.SignalDir.INHERIT:
+        assert type(signal) is not M.BitsSignal
+
+        if type(signal) is M.ListSignal:
+            for i in range(len(signal.fields)):
+                FlipSignal(signal.fields[i])
+
+        if type(signal) is M.BundleSignal:
+            for key in signal.fields:
+                FlipSignal(signal.fields[key])
+
+    else:
+        signal.meta.sigdir = M.flip_map[signal.meta.sigdir]
+
 def Wire(primitive_spec):
     """Produce a wire signal based on the given primitive_spec."""
     signal = CreateSignal(primitive_spec, name=NewWireName())

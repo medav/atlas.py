@@ -156,7 +156,7 @@ class InstanceOperator(Operator):
         for io_name in self.module.io_typespec:
             typespec = self.module.io_typespec[io_name]
             signal = CreateSignal(typespec, io_name, self)
-            signal.signal.meta.sigdir = M.flip_map[typespec.meta.sigdir]
+            FlipSignal(signal)
             CurrentModule().signals.append(signal.signal)
             self.io_bundle[io_name] = signal
 
