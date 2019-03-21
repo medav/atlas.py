@@ -1,9 +1,12 @@
 import math
 from ctypes import *
 from contextlib import contextmanager
+import shutil
 
 from ..frontend import *
 from ..base import *
+
+from .verilator import *
 
 class SignalTestbench(object):
     def __init__(self, signal):
@@ -147,9 +150,22 @@ class Testbench(object):
         if self.so is not None:
             self.so.teardown()
 
-# class SignalWrapper(object):
-#     def __init__(self, signal):
-#         self.signal = signal
 
-#     def __ilshift__(self, other):
-#         assert type(other) is int
+@contextmanager
+def TestModule(mod_func):
+    circuit = Circuit('circuit', True, True)
+
+    with Context(circuit):
+        top = mod_func()
+
+    circuit.top = top
+    circuit.name = top.name
+
+    build_folder = f'test_{circuit.top.name}'
+    so_name = VeriCompile(circuit, build_folder)
+    tb = Testbench(circuit, so_name)
+
+    yield tb
+
+    del tb
+    shutil.rmtree(build_folder)
