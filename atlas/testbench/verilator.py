@@ -184,18 +184,18 @@ def VeriCompile(circuit, build_dir):
     EmitCircuit(circuit, vfilename)
 
     cmdline = ['verilator'] + flags + [vfilename]
-    # veri_proc = subprocess.Popen(' '.join(cmdline), shell=True)
-    # veri_proc.wait()
+    veri_proc = subprocess.Popen(' '.join(cmdline), shell=True)
+    veri_proc.wait()
 
     makefile_name = f'V{top_name}.mk'
-    # make_proc = subprocess.Popen(['make', '-j4', '-C', build_dir, '-f', makefile_name])
-    # make_proc.wait()
+    make_proc = subprocess.Popen(['make', '-j4', '-C', build_dir, '-f', makefile_name])
+    make_proc.wait()
 
     testbench_name = f'{build_dir}/testbench.cc'
     GenerateTestbench(circuit, 'io_clock', 'io_reset', testbench_name)
 
-    vlib_name = f'build/V{top_name}__ALL.a'
-    so_name = './build/verisim.so'
+    vlib_name = f'{build_dir}/V{top_name}__ALL.a'
+    so_name = f'./{build_dir}/verisim.so'
 
     gpp_proc = subprocess.Popen([
         'g++',
