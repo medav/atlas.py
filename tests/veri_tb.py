@@ -32,16 +32,8 @@ def Gcd(data_width):
 
     NameSignals(locals())
 
-circuit = Circuit('gcd', True, True)
 
-with Context(circuit):
-    top = Gcd(64)
-
-circuit.top = top
-
-tb = Testbench(circuit, VeriCompile(circuit, 'build'))
-
-def HwGcd(a, b):
+def HwGcd(tb, a, b):
     tb.Reset(10)
     tb.io.in_a <<= a
     tb.io.in_b <<= b
@@ -60,14 +52,11 @@ def SwGcd(a, b):
 
     return a
 
-# print(HwGcd(0x100, 0x100))
-
-# tb.Step(10)
-
-for i in range(2, 1000):
-    for j in range(2, 1000):
-        s = SwGcd(i, j)
-        h = HwGcd(i, j)
-        if s >= 10:
-            print(s, '==', h)
-        assert s == h, f'Mismatch for Gcd({i}, {j})!'
+with TestModule(lambda: Gcd(64)) as tb:
+    for i in range(2, 100):
+        for j in range(2, 100):
+            s = SwGcd(i, j)
+            h = HwGcd(tb, i, j)
+            if s >= 10:
+                print(s, '==', h)
+            assert s == h, f'Mismatch for Gcd({i}, {j})!'
