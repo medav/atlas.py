@@ -126,6 +126,9 @@ class Testbench(object):
         self.so.setup()
         self.io = IoTestbench(circuit.top.io_dict, self)
 
+    def SetupVcd(self, filename):
+        self.so.setup_vcd(c_char_p(filename.encode('ascii')))
+
     def LookupIo(self, io_name):
         cstr = c_char_p(io_name.encode('ascii'))
         return self.so.lookup_io(cstr)
