@@ -171,6 +171,9 @@ class SliceOperator(Operator):
         assert type(op0) is M.BitsSignal
         super().__init__('slice')
 
+        assert high >= 0 and high <= op0.width, f'{high}:{low} larger than signal width'
+        assert low >= 0, f'{high}:{low} has negative lower bound'
+
         self.op0 = op0
         self.high = high
         self.low = low
