@@ -20,8 +20,13 @@ class CatOperator(Operator):
         signal_list = list(map(FilterFrontend, signal_list))
 
         for signal in signal_list:
-            assert type(signal) is M.BitsSignal
-            self.width += signal.width
+
+            if type(signal) is M.BitsSignal:
+                self.width += signal.width
+            elif type(signal) is int:
+                self.width += Log2Ceil(signal) if signal > 0 else 1
+            else:
+                assert False, 'Expected bits or literal'
 
         super().__init__('cat')
         self.signal_list = signal_list
