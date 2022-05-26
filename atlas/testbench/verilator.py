@@ -17,21 +17,18 @@ verilator_cpps = [
 
 @dataclass(frozen=True)
 class VeriOpts(object):
-    output_split : int = 24
-    unroll_count : int = 256
+    output_split : int = 12
+    unroll_count : int = 1
 
 def BuildFlags(build_dir, top_name, opts):
     return [
         '--Mdir', f'{build_dir}',
         '--cc',
+        '--lib-create', f'{top_name}',
         '--top-module', f'{top_name}',
         '--trace',
-        '--output-split', f'{opts.output_split}',
-        '--unroll-count', f'{opts.unroll_count}',
-        '-Wno-STMTDLY',
-        '--x-assign unique',
         '-O3',
-        '-CFLAGS', '"-O3"',
+        '-CFLAGS', '"-O3 -fPIC"',
         '--savable'
     ]
 
@@ -52,10 +49,10 @@ def GenerateTestbench(circuit, clock_signal, reset_signal, filename):
 
 #define EXPORT extern "C"
 
-uint64_t simtime = 0;
+uint64_t main_time = 0;
 
 double sc_time_stamp() {{
-    return simtime;
+    return main_time;
 }}
 
 V{top_name} * top;
@@ -124,12 +121,12 @@ EXPORT void reset(int num_cycles) {{
         top->{clock_signal} = 0;
 
         top->eval();
-        if (vcd) vcd->dump((vluint64_t)simtime++);
+        if (vcd) vcd->dump((vluint64_t)main_time++);
 
         top->{clock_signal} = 1;
 
         top->eval();
-        if (vcd) vcd->dump((vluint64_t)simtime++);
+        if (vcd) vcd->dump((vluint64_t)main_time++);
     }}
 
     top->io_reset = 0;
@@ -142,12 +139,12 @@ EXPORT void step(int num_cycles) {{
         top->{clock_signal} = 0;
 
         top->eval();
-        if (vcd) vcd->dump((vluint64_t)simtime++);
+        if (vcd) vcd->dump((vluint64_t)main_time++);
 
         top->{clock_signal} = 1;
 
         top->eval();
-        if (vcd) vcd->dump((vluint64_t)simtime++);
+        if (vcd) vcd->dump((vluint64_t)main_time++);
     }}
 }}
 """
@@ -194,18 +191,22 @@ def VeriCompile(circuit, build_dir):
     testbench_name = f'{build_dir}/testbench.cc'
     GenerateTestbench(circuit, 'io_clock', 'io_reset', testbench_name)
 
-    vlib_name = f'{build_dir}/V{top_name}__ALL.a'
+    vlib_name = f'{build_dir}/lib{top_name}.a'
     so_name = f'./{build_dir}/verisim.so'
 
-    gpp_proc = subprocess.Popen([
+    cmdline = [
         'g++',
         '-shared',
+        '-fPIC',
         f'-o{so_name}',
-        vlib_name,
-        testbench_name
-        ] + verilator_cpps + [
-        '-I', vinc
-    ])
+        testbench_name,
+        '-I', vinc,
+        '-L', f'./{build_dir}',
+        f'./{build_dir}/lib{top_name}.so'
+    ]
+    print(' '.join(cmdline))
+
+    gpp_proc = subprocess.Popen(cmdline)
 
     gpp_proc.wait()
 

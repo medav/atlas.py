@@ -171,4 +171,4 @@ def TestModule(mod_func):
     yield tb
 
     del tb
-    shutil.rmtree(build_folder)
+    shutil.rmtree(build_folder, ignore_errors=True)
